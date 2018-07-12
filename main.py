@@ -11,6 +11,17 @@ ghc = GitHubConnector(cfg.get_api_key(), cfg.get_repo(), cfg.get_organisation())
 issue_ctrl = IssueController(ghc)
 org_ctrl = OrganisationController(ghc)
 
+
+def test():
+    """Tests sample APIs (to be removed later)"""
+
+    r = ghc.organisation.get_repo("main")
+    startdate = datetime.datetime(2018,1,27)
+    enddate = datetime.datetime(2018,8,14)
+
+    for PR in r.get_pulls(state="closed"):
+        print(PR.user, PR.closed_at, PR.is_merged())
+
 def setup_logger():
     """Sets up the logger"""
     logging.basicConfig(filename='log.log',level=logging.DEBUG)
