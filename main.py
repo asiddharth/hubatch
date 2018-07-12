@@ -1,7 +1,7 @@
-from controllers import IssueController, OrganisationController
+from controllers import IssueController, OrganisationController, TeamProjectMergeStatusDetector
 from common.config import AppConfig
 from connectors.github import GitHubConnector
-
+import datetime
 import parsers
 
 import argparse, logging, sys
@@ -10,12 +10,13 @@ cfg = AppConfig()
 ghc = GitHubConnector(cfg.get_api_key(), cfg.get_repo(), cfg.get_organisation())
 issue_ctrl = IssueController(ghc)
 org_ctrl = OrganisationController(ghc)
-
+proj_detector = TeamProjectMergeStatusDetector(cfg)
 
 def test():
     """Tests sample APIs (to be removed later)"""
 
-    r = ghc.organisation.get_repo("main")
+    #r = ghc.organisation.get_repo("main")
+    r = ghc.repo
     startdate = datetime.datetime(2018,1,27)
     enddate = datetime.datetime(2018,8,14)
 
@@ -39,9 +40,12 @@ def setup_argparse():
     subparsers.required = True
     issue_ctrl.setup_argparse(subparsers)
     org_ctrl.setup_argparse(subparsers)
+    proj_detector.setup_argparse(subparsers)
+
     return parser
 
 if __name__ == '__main__':
+    # test()
     setup_logger()
     logging.info('hubatch - GitHub CLI tools: Started!')
     parser = setup_argparse()
