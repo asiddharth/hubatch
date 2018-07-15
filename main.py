@@ -1,4 +1,4 @@
-from controllers import IssueController, OrganisationController, TeamProjectMergeStatusDetector
+from controllers import IssueController, OrganisationController, TeamProjectMergeStatusDetector, AddressbookPRDetector
 from common.config import AppConfig
 from connectors.github import GitHubConnector
 import datetime
@@ -11,6 +11,7 @@ ghc = GitHubConnector(cfg.get_api_key(), cfg.get_repo(), cfg.get_organisation())
 issue_ctrl = IssueController(ghc)
 org_ctrl = OrganisationController(ghc)
 proj_detector = TeamProjectMergeStatusDetector(cfg)
+addressbook_ctrl = AddressbookPRDetector(cfg)
 
 def test():
     """Tests sample APIs (to be removed later)"""
@@ -41,6 +42,7 @@ def setup_argparse():
     issue_ctrl.setup_argparse(subparsers)
     org_ctrl.setup_argparse(subparsers)
     proj_detector.setup_argparse(subparsers)
+    addressbook_ctrl.setup_argparse(subparsers)
 
     return parser
 

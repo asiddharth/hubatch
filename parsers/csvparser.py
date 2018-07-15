@@ -25,3 +25,16 @@ def write_items_to_file(item_list, file_list) :
     for item, filename in zip(item_list, file_list) :
         with open(filename, 'w') as resfile:
             resfile.write('\n'.join(item))
+
+def write_items_to_csv(item_list, file_list) :
+    """
+    Writes a list of items into files
+    :param item_list:
+    :param file_list:
+    :return:
+    """
+    for item, filename in zip(item_list, file_list) :
+        wr = csv.writer(open("./output/"+filename+".csv", 'w'), delimiter=',', 
+                            quoting=csv.QUOTE_ALL)
+        for row in item:
+            wr.writerow(row)
