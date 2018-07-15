@@ -1,7 +1,9 @@
 """
 Parses content from CSV files
 """
-import csv
+import csv, os
+
+OUTPUT_DIR = "./output/"
 
 def get_rows_as_list(filename):
     """Returns a list of rows (represented as a list)"""
@@ -33,6 +35,10 @@ def write_items_to_csv(item_list, file_list) :
     :param file_list:
     :return:
     """
+
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+
     for item, filename in zip(item_list, file_list) :
         wr = csv.writer(open("./output/"+filename+".csv", 'w'), delimiter=',', 
                             quoting=csv.QUOTE_ALL)
