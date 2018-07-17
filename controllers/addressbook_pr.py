@@ -7,7 +7,7 @@ from connectors.github import GitHubConnector
 import parsers
 import sys
 import datetime
-import logging, time, re
+import logging, time, re, argparse
 from collections import defaultdict
 
 ORGANIZATION = "nus-cs2103-AY1718S2"
@@ -23,7 +23,7 @@ class AddressbookPRDetector(BaseController):
         """
         print("Organization for PR checking (Phase A): ", ORGANIZATION)
         parser = subparsers.add_parser('addressbook-PR', help='GitHub Addressbook management tools')
-        addressbook_subparsers = parser.add_subparsers(help='name of tool to execute')
+        addressbook_subparsers = parser.add_subparsers(help='check PR submissions')
         self.setup_check_PR(addressbook_subparsers)
 
     def setup_check_PR(self, subparsers):
@@ -34,7 +34,7 @@ class AddressbookPRDetector(BaseController):
         -e [end date: dd/m/yyyy] -w [week number] -d [day: W,T,F]'''
 
         parser = subparsers.add_parser('check-PR', help='check submitted PRs of students in Addressbook'
-                                    ,epilog=example_text,
+                                    ,epilog=example_text
                                     ,formatter_class=argparse.RawDescriptionHelpFormatter)
         parser.add_argument('-csv', type=str,
                             help='filename of the CSV containing a list of GitHub usernames, day')
