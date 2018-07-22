@@ -12,17 +12,18 @@ issue_ctrl = IssueController(ghc)
 org_ctrl = OrganisationController(ghc)
 proj_detector = TeamProjectMergeStatusDetector(cfg)
 addressbook_ctrl = AddressbookPRDetector(cfg)
-
 def test():
     """Tests sample APIs (to be removed later)"""
 
     #r = ghc.organisation.get_repo("main")
     r = ghc.repo
-    startdate = datetime.datetime(2018,1,27)
-    enddate = datetime.datetime(2018,8,14)
-
-    for PR in r.get_pulls(state="closed"):
-        print(PR.user, PR.closed_at, PR.is_merged())
+    # startdate = datetime.datetime(2018,1,27)
+    # enddate = datetime.datetime(2018,8,14)
+    #
+    # for PR in r.get_pulls(state="closed"):
+    #     print(PR.user, PR.closed_at, PR.is_merged())
+    for i in range(100) :
+        ghc.create_issue(title='ThrottleTest ' + str(i),msg='DummyTesxt', assignee=None)
 
 def setup_logger():
     """Sets up the logger"""
@@ -47,10 +48,10 @@ def setup_argparse():
     return parser
 
 if __name__ == '__main__':
-    # test()
-    setup_logger()
-    logging.info('hubatch - GitHub CLI tools: Started!')
-    parser = setup_argparse()
-    args = parser.parse_args()
-
-    args.func(args)
+    test()
+    # setup_logger()
+    # logging.info('hubatch - GitHub CLI tools: Started!')
+    # parser = setup_argparse()
+    # args = parser.parse_args()
+    #
+    # args.func(args)
