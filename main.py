@@ -1,4 +1,5 @@
-from controllers import IssueController, OrganisationController, TeamProjectMergeStatusDetector, AddressbookPRDetector
+from controllers import IssueController, OrganisationController, TeamProjectMergeStatusDetector
+from controllers import AddressbookPRDetector, CreateFeedback
 from common.config import AppConfig
 from connectors.github import GitHubConnector
 import datetime
@@ -12,6 +13,8 @@ issue_ctrl = IssueController(ghc)
 org_ctrl = OrganisationController(ghc)
 proj_detector = TeamProjectMergeStatusDetector(cfg)
 addressbook_ctrl = AddressbookPRDetector(cfg)
+create_feedback_ctrl = CreateFeedback(cfg)
+
 def test():
     """Tests sample APIs (to be removed later)"""
 
@@ -44,14 +47,15 @@ def setup_argparse():
     org_ctrl.setup_argparse(subparsers)
     proj_detector.setup_argparse(subparsers)
     addressbook_ctrl.setup_argparse(subparsers)
+    create_feedback_ctrl.setup_argparse(subparsers)
 
     return parser
 
 if __name__ == '__main__':
-    test()
-    # setup_logger()
-    # logging.info('hubatch - GitHub CLI tools: Started!')
-    # parser = setup_argparse()
-    # args = parser.parse_args()
-    #
-    # args.func(args)
+    # test()
+
+    setup_logger()
+    logging.info('hubatch - GitHub CLI tools: Started!')
+    parser = setup_argparse()
+    args = parser.parse_args()
+    args.func(args)

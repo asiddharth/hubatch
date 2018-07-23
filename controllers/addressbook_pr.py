@@ -32,7 +32,7 @@ class AddressbookPRDetector(BaseController):
         example_text = '''example:
         python main.py addressbook-PR check-PR -csv [path_to_csv] 
         -l [addressbook_level, e.g 1] -s [start date: dd/m/yyyy] 
-        -e [end date: dd/m/yyyy] -w [week number] -d [day: W,T,F]'''
+        -e [end date: dd/m/yyyy] -w [week number] -d [day: W,T,F] '''
 
         parser = subparsers.add_parser('check-PR', help='check submitted PRs of students in Addressbook'
                                     ,epilog=example_text
@@ -49,8 +49,6 @@ class AddressbookPRDetector(BaseController):
                             help='Week number of the course')
         parser.add_argument('-d', '--day', type=str,
                             help='Deadline day of the week')
-        parser.add_argument('-c', '--checklist', type=str,
-                            help='Deadline day of the week')
         parser.set_defaults(func=self.check_and_return_no_PRs)
 
 
@@ -58,18 +56,17 @@ class AddressbookPRDetector(BaseController):
         
         logging.debug('CSV datafile: %s', args.csv)
         if parsers.common.are_files_readable(args.csv):
-            users_PRs_done, users_PRs_not_done = self.check_PR_status(args.csv, args.level, args.start_date, args.end_date,
-                                                                      args.week, args.day, self.parse_checklist(args.checklist))
+            users_PRs_done=self.check_PR_status(args.csv, args.level, args.start_date, 
+                                                                      args.end_date, args.week, args.day)
             data_to_print_done = self.format_data_to_print(users_PRs_done)
-            data_to_print_not_done = self.format_data_to_print(users_PRs_not_done)
-            parsers.csvparser.write_items_to_csv([data_to_print_done, data_to_print_not_done],
-                                                  file_list=['student_PRs_day{}_week{}_done'.format(args.day, args.week),
-                                                             'student_PRs_day{}_week{}_not_done'.format(args.day, args.week)])
+            parsers.csvparser.write_items_to_csv([data_to_print_done],
+                                                  file_list=['student_PRs_done_week{}_AB{}_day{}'.format(args.week, args.level, args.day)], 
+                                                             week=args.week, level=args.level)
         else:
             sys.exit(1)
 
 
-    def check_PR_status(self, csv_file, level, start_date, end_date, week, day, checklist):
+    def check_PR_status(self, csv_file, level, start_date, end_date, week, day):
 
         assert(level != None)
 
@@ -81,13 +78,18 @@ class AddressbookPRDetector(BaseController):
         repository = GitHubConnector(self.cfg.get_api_key(), ORGANIZATION+"/"+repository_name, ORGANIZATION).repo
         student_PRs = self.get_student_PR_info(end_datetime, students_to_check, repository, start_datetime, week)
         self.set_consistent_PR_labels(student_PRs)
-        student_PRs_done,student_PRs_not_done  = self.filter_by_checklist(student_PRs, checklist)
-        return student_PRs_done,student_PRs_not_done
+
+        for student in students_to_check:
+            if student not in student_PRs.keys():
+                student_PRs[student] = []
+
+        # student_PRs_done,student_PRs_not_done  = self.filter_by_checklist(student_PRs, students_to_check, checklist)
+        return student_PRs
 
     def set_consistent_PR_labels(self, student_PRs):
 
         for student, list_of_PRs in student_PRs.items():
-            student_PRs[student] = [PR_tag.lower() for PR_tag in list_of_PRs    ]
+            student_PRs[student] = [PR_tag.lower() for PR_tag in list_of_PRs ]
 
     def get_student_PR_info(self, end_datetime, students_to_check, repository, start_datetime, week):
 
@@ -95,7 +97,7 @@ class AddressbookPRDetector(BaseController):
         assignment_prefix = "[W{}".format(str(week))
 
         for pull_request in repository.get_pulls(state="all", sort="updated", direction="desc"):
-            if (pull_request.created_at <= end_datetime) and (pull_request.user.login in students_to_check) and self.check_reviewed(pull_request.get_labels()):
+            if (pull_request.created_at <= end_datetime) and (pull_request.user.login in students_to_check):
                 try:
                     question = re.search('\[(W|w).*?\..*?\]', pull_request.title).group()
                     if question[:3] == assignment_prefix:
@@ -127,22 +129,22 @@ class AddressbookPRDetector(BaseController):
         checklist = [PR_tag.lower() for PR_tag in checklist]
         return set(checklist)
 
-    def filter_by_checklist(self, student_PRs, checklist):
+    def filter_by_checklist(self, student_PRs, students_to_check, checklist):
         student_PRs_done = dict()
         student_PRs_not_done = dict()
 
         for student,done_list in student_PRs.items() :
             not_done = checklist - set(done_list)
-            print(student,done_list)
-            print(not_done)
             done = list(checklist - not_done)
             not_done =  list(not_done)
             student_PRs_done[student] = done
             student_PRs_not_done[student] = not_done
-            # print(student_PRs_done[student])
-            # print(student_PRs_not_done[student])
-            # print(checklist)
-            # exit()
+
+        for student in students_to_check:
+            if student not in student_PRs_done.keys():
+                student_PRs_done[student] = []
+                student_PRs_not_done[student] =list(checklist)
+
         return student_PRs_done, student_PRs_not_done
 
     def format_data_to_print(self, data):

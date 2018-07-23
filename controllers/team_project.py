@@ -80,6 +80,7 @@ class TeamProjectMergeStatusDetector(BaseController):
                 users_not_merged_in_team.append(member)
         return users_merged_in_team, users_not_merged_in_team
 
+
     def extract_relevant_info(self, csv_file, day):
         user_list = parsers.csvparser.get_rows_as_list(csv_file)
         users_to_check = list(map(lambda x: [x[0].split(".")[-1]+"-"+x[1].split(".")[1], x[2]],

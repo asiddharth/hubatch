@@ -28,19 +28,20 @@ def write_items_to_file(item_list, file_list) :
         with open(filename, 'w') as resfile:
             resfile.write('\n'.join(item))
 
-def write_items_to_csv(item_list, file_list) :
+def write_items_to_csv(item_list, file_list, week, level) :
     """
     Writes a list of items into files
     :param item_list:
     :param file_list:
     :return:
     """
+    output_path = OUTPUT_DIR+"/AB{}/week_{}/".format(level, week)
 
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
     for item, filename in zip(item_list, file_list) :
-        wr = csv.writer(open("./output/"+filename+".csv", 'w'), delimiter=',', 
+        wr = csv.writer(open(output_path+filename+".csv", 'w'), delimiter=',', 
                             quoting=csv.QUOTE_ALL)
         for row in item:
             wr.writerow(row)
