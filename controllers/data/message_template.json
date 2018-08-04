@@ -1,0 +1,8 @@
+{
+	"week6":{
+		"team": "Subject: feedback on week 6 progress\n\nTeam {} progress noted (well done!):\n{}\nPending tasks:\n{}\n\n",
+		"indiv": "Individual progress of @{}:\nProgress noted (well done!):\n{}\n\nYet to receive:\n{}\n\n",
+		"tutor": "Tutor: @{} \n\nPlease reply in this thread if there are any inaccuracies in the above observations."
+	}
+	
+}

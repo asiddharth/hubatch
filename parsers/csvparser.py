@@ -1,7 +1,9 @@
 """
 Parses content from CSV files
 """
+import pandas as pd
 import csv, os
+
 
 OUTPUT_DIR = "./output/"
 
@@ -16,6 +18,10 @@ def get_rows_as_dict(filename):
     with open(filename, newline='') as csvfile:
         csvreader = csv.reader(csvfile)
         return {row[0]: row[1:] for row in csvreader}
+
+def get_pandas_list(csv_file):
+    '''Returns pandas dataframe of a csv file'''
+    return pd.read_csv(csv_file)
 
 def write_items_to_file(item_list, file_list) :
     """

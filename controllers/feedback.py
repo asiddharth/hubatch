@@ -157,7 +157,7 @@ class CreateFeedback(BaseController):
 
         for team, feedback in feedbacks.items():
             print(team)
-            ghc.create_issue(title='PR Submission feedback for week {}'.format(week), msg=feedback, assignee=None)
+            ghc.create_issue(title='PR Submission now feedback for week {}'.format(week), msg=feedback, assignee=None)
             time.sleep(2)
 
     def generate_feedback_message(self, teams_to_check, cat1_done, cat1_not_done,
