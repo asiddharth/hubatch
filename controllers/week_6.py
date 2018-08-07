@@ -16,6 +16,7 @@ from collections import defaultdict
 import logging, time
 
 TEAM_REPO_PREFIX = "CS2103JAN2018-"
+UI_PNG_SUBSTRINGS = ["ui", ".png"]
 DEVELOPER_GUIDE = "DeveloperGuide.adoc"
 USER_GUIDE = "UserGuide.adoc"
 README = "README.adoc"
@@ -88,11 +89,8 @@ class Week_6(BaseController):
         student_with_forks=self.check_team_forks(team_repositories)
         student_DGs, student_UGs, student_About_Us, \
             student_Readme, student_java_code = self.check_file_changes(team_repositories, team_list, args)
-        teams_with_release, teams_without_release, teams_with_jar, teams_without_jar = self.check_jar_and_releaseTag(args)
-
-
         output_file=self.write_week_to_csv(team_list, teams_with_repo, student_with_forks, student_DGs, \
-                                 student_UGs, student_About_Us, student_Readme, student_java_code,teams_with_release, teams_with_jar, args.day)
+                                 student_UGs, student_About_Us, student_Readme, student_java_code,args.day)
 
     def create_feedback(self, args):
         """
@@ -292,6 +290,39 @@ class Week_6(BaseController):
         else :
             sys.exit(1)
 
+    def check_team_ui_png(self, args):
+        teams_to_check = self.extract_team_info(args.csv, args.day)
+        team_ui_png = {}
+        for team, students in teams_to_check.items():
+            team_ui_png[team] = 0
+
+        start_datetime=datetime.datetime.strptime(args.start_date, '%d/%m/%Y')
+        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')
+
+        for team, students in teams_to_check.items():
+            organization = TEAM_REPO_PREFIX + str(team)
+            repo =  GitHubConnector(self.cfg.get_api_key(),organization+ "/main", organization).repo
+            found = False
+            for pull_request in repo.get_pulls(state="all", sort="updated", direction="desc"):
+                try:
+                    if (pull_request.created_at <= end_datetime) and (pull_request.created_at >= start_datetime) \
+                            and found == False:
+                        for commit in pull_request.get_commits():
+                            for file in commit.files:
+                                is_image_file = True
+                                for checkstring in UI_PNG_SUBSTRINGS :
+                                    is_image_file = True
+                                    if checkstring not in file.filename.lower() :
+                                        is_image_file = False
+                                        break
+                                if is_image_file == True :
+                                    team_ui_png[team] = 1
+                                    found = True
+                                    break
+                except:
+                    continue
+        return team_ui_png
+
     def extract_team_info(self, csv_file, day):
         """
         Extracts relevant team (and their students) details based on the day of the week
@@ -354,8 +385,7 @@ class Week_6(BaseController):
         return teams_with_release, teams_without_release, teams_with_jar, teams_without_jar
 
     def write_week_to_csv(self, team_list, teams_with_repo, student_with_forks, student_DGs, \
-                            student_UGs, student_About_Us, student_Readme, student_java_code, teams_with_release, \
-                          teams_with_jar, day) :
+                            student_UGs, student_About_Us, student_Readme, student_java_code, day) :
         """
         Writes audit details of week in a csv file
         :param team_list: dictionary of all the teams to be considered for corresponding "day"
@@ -390,8 +420,6 @@ class Week_6(BaseController):
                 to_print.append(student_About_Us[student] > 0)
                 to_print.append(student_Readme[student] > 0)
                 to_print .append(student_java_code[student] > 0)
-                to_print.append(team in teams_with_release)
-                to_print.append(team in teams_with_jar)
                 wr.writerow(to_print)
 
         return output_file
