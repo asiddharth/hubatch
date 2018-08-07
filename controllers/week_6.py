@@ -24,7 +24,7 @@ JAVA = ".java"
 FXML = ".fxml"
 MESSAGE_TEMPLATE = "controllers/data/message_template.json"
 OUTPUT_DIR = "./output/"
-CSV_HEADER = ["Student", "Team", "Repo", "Fork", "DG", "UG", "AboutUs", "README", "Java"]
+CSV_HEADER = ["Student", "Team", "Repo", "Fork", "DG", "UG", "AboutUs", "README", "Java", "RELEASE", "JAR"]
 DUMMY = "dummy"
 WEEK = 6
 SLEEP_TIME = 3
@@ -84,13 +84,15 @@ class Week_6(BaseController):
         """
         logging.debug('CSV datafile: %s', args.csv)
 
-        team_repositories, teams_with_repo, team_list=self.check_team_repo_setup(args) 
+        team_repositories, teams_with_repo, team_list=self.check_team_repo_setup(args)
         student_with_forks=self.check_team_forks(team_repositories)
         student_DGs, student_UGs, student_About_Us, \
             student_Readme, student_java_code = self.check_file_changes(team_repositories, team_list, args)
-            
+        teams_with_release, teams_without_release, teams_with_jar, teams_without_jar = self.check_jar_and_releaseTag(args)
+
+
         output_file=self.write_week_to_csv(team_list, teams_with_repo, student_with_forks, student_DGs, \
-                                 student_UGs, student_About_Us, student_Readme, student_java_code, args.day)
+                                 student_UGs, student_About_Us, student_Readme, student_java_code,teams_with_release, teams_with_jar, args.day)
 
     def create_feedback(self, args):
         """
@@ -277,6 +279,19 @@ class Week_6(BaseController):
         else:
             sys.exit(1)
 
+
+    def check_jar_and_releaseTag(self, args) :
+        if parsers.common.are_files_readable(args.csv):
+            start_datetime = datetime.datetime.strptime(args.start_date, '%d/%m/%Y')
+            end_datetime = datetime.datetime.strptime(args.end_date, '%d/%m/%Y')
+            teams_to_check = self.extract_team_info(args.csv, args.day)
+            teams_with_release, teams_without_release, teams_with_jar, teams_without_jar = \
+                self.check_jar_releaseTag_existence(teams_to_check, start_datetime, end_datetime)
+            return teams_with_release, teams_without_release, teams_with_jar, teams_without_jar
+
+        else :
+            sys.exit(1)
+
     def extract_team_info(self, csv_file, day):
         """
         Extracts relevant team (and their students) details based on the day of the week
@@ -316,9 +331,31 @@ class Week_6(BaseController):
                 teams_without_repo[team]=students
         return teams_with_repo, teams_without_repo, repo_objects
 
+    def check_jar_releaseTag_existence(self, teams_to_check, start_datetime, end_datetime):
+        teams_with_release, teams_without_release, teams_with_jar, teams_without_jar = {}, {}, {}, {}
+        for team, students in teams_to_check.items():
+            repository = TEAM_REPO_PREFIX + str(team) + "/main"
+            try:
+                repository = Github(self.cfg.get_api_key()).get_repo(repository)
+                repository_releases = repository.get_releases()
+                for release in repository_releases :
+                    if release.published_at <= end_datetime and release.published_at >= start_datetime :
+                        if release.tag_name is not None :
+                            teams_with_release[team] = students
+                        if release.tarball_url is not None or release.zipball_url is not None :
+                            teams_with_jar[team] = students
+                if teams_with_release.get(team, None) is None :
+                    teams_without_release[team] = students
+                if teams_with_jar.get(team, None) is None :
+                    teams_without_jar[team] = students
+
+            except GithubException as e:
+                logging.error('Unexpected error Team {}'.format(team))
+        return teams_with_release, teams_without_release, teams_with_jar, teams_without_jar
 
     def write_week_to_csv(self, team_list, teams_with_repo, student_with_forks, student_DGs, \
-                            student_UGs, student_About_Us, student_Readme, student_java_code, day) :
+                            student_UGs, student_About_Us, student_Readme, student_java_code, teams_with_release, \
+                          teams_with_jar, day) :
         """
         Writes audit details of week in a csv file
         :param team_list: dictionary of all the teams to be considered for corresponding "day"
@@ -353,6 +390,8 @@ class Week_6(BaseController):
                 to_print.append(student_About_Us[student] > 0)
                 to_print.append(student_Readme[student] > 0)
                 to_print .append(student_java_code[student] > 0)
+                to_print.append(team in teams_with_release)
+                to_print.append(team in teams_with_jar)
                 wr.writerow(to_print)
 
         return output_file
