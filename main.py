@@ -1,7 +1,8 @@
 from controllers import IssueController, OrganisationController, TeamProjectMergeStatusDetector
-from controllers import AddressbookPRDetector, CreateFeedback, Week_6
+from controllers import AddressbookPRDetector, CreateFeedback, Week_6, General, Week_3
 from common.config import AppConfig
 from connectors.github import GitHubConnector
+from github import Github
 import datetime
 import parsers
 
@@ -15,9 +16,19 @@ proj_detector = TeamProjectMergeStatusDetector(cfg)
 addressbook_ctrl = AddressbookPRDetector(cfg)
 create_feedback_ctrl = CreateFeedback(cfg)
 week_6_ctrl = Week_6(cfg)
+week_3_ctrl = Week_3(cfg)
+general_ctrl = General(cfg)
 
 def test():
     """Tests sample APIs (to be removed later)"""
+
+    # sha = "5cc6d8b2dcb21742917a00feed277c55c686c9f7"
+    # gh = Github(cfg.get_api_key())
+    # r = gh.get_repo("devamanyu/main")
+    # print(r.get_git_commit(sha).author.email)
+    # print(r)
+
+    # exit()
 
     #r = ghc.organisation.get_repo("main")
     # r = ghc.repo
@@ -58,6 +69,8 @@ def setup_argparse():
     addressbook_ctrl.setup_argparse(subparsers)
     create_feedback_ctrl.setup_argparse(subparsers)
     week_6_ctrl.setup_argparse(subparsers)
+    week_3_ctrl.setup_argparse(subparsers)
+    general_ctrl.setup_argparse(subparsers)
 
     return parser
 
