@@ -9,19 +9,24 @@ import parsers
 import smtplib
 import sys
 import datetime
+from datetime import timedelta
 import os
 import csv
 import json
 from collections import defaultdict
 import logging, time
 
+#############################################################
 COURSE = "CS2113"
 GMAIL_USER = 'cs2113.bot@gmail.com'  
 GMAIL_PASSWORD = 'cs2113.bot.feedback'
+TEST_EMAIL = "hdevamanyu@student.nitw.ac.in"
+
+ADDRESSBOOK_REPO = "nusCS2113-AY1819S1/addressbook-level1"
+PRODUCTION = False
+##############################################################
+
 COURSE_EMAIL = COURSE.lower()+"@comp.nus.edu.sg"
-
-ADDRESSBOOK_REPO = "nus-cs2103-AY1718S2/addressbook-level1"
-
 DEVELOPER_GUIDE = "DeveloperGuide.adoc"
 USER_GUIDE = "UserGuide.adoc"
 README = "README.adoc"
@@ -30,7 +35,7 @@ JAVA = ".java"
 FXML = ".fxml"
 TEST = "test/"
 MESSAGE_TEMPLATE = "controllers/data/message_template.json"
-CSV_HEADER = ["Student", "Team", "Fork", "Java", "Test", "README", "Feedback_Post"]
+CSV_HEADER = ["Student", "Team", "Fork", "Java", "Test", "UG"]
 OUTPUT_DIR = "./output/"
 DUMMY = "dummy"
 WEEK = 3
@@ -89,26 +94,38 @@ class Week_3(BaseController):
         logging.debug('Reading audit from csv: %s', args.csv)
 
         audit_details = self.read_audit_details(args)
-        teams_to_check=self.extract_team_info(args.csv, args.day)
+        teams_to_check, student_details=self.extract_team_info(args.csv, args.day)
         student_forks_addressbook=self.get_student_forks(teams_to_check, args)
-        student_feedback_messages = self.get_feedback_message(teams_to_check, audit_details, student_forks_addressbook, args)
-        self.mail_feedback(student_feedback_messages)
+        student_feedback_messages = self.get_feedback_message(teams_to_check, student_details, audit_details, student_forks_addressbook, args)
+        self.mail_feedback(student_feedback_messages, student_details)
 
-    def mail_feedback(self, student_feedback_messages):
+    def mail_feedback(self, student_feedback_messages, student_details):
+
+        if PRODUCTION:
+            response = input("\n\nALERT!!\n\nAre you sure to send actual emails? [Y/n]")
+            response = response.lower()
+            if "n" in response:
+                exit()
+
         server_ssl = smtplib.SMTP_SSL('smtp.gmail.com', 465)
         server_ssl.ehlo()
         server_ssl.login(GMAIL_USER, GMAIL_PASSWORD)
 
+        mail_subject=message_template["week{}".format(WEEK)]["mail_subject"]
+
         for student, message in student_feedback_messages.items():
             mail_message = 'Subject: {}\n\n{}'.format(mail_subject.format(COURSE, WEEK), message)
-            print(mail_message)
-            mail = server_ssl.sendmail(GMAIL_USER, "hdevamanyu@student.nitw.ac.in", mail_message)
-            time.sleep(SLEEP_TIME)
             
+            print(student, student_details[student][0])
+            print(mail_message)
+            
+            dest_email = student_details[student][0] if PRODUCTION else TEST_EMAIL
+            mail = server_ssl.sendmail(GMAIL_USER, dest_email, mail_message)
+            time.sleep(SLEEP_TIME)
         server_ssl.close()
 
 
-    def get_feedback_message(self, teams_to_check, audit_details, student_forks, args): 
+    def get_feedback_message(self, teams_to_check,  student_details, audit_details, student_forks, args): 
         """
         Creates the feedback message for each team
         :param teams_to_check: dictionary(key=teams, value=list of students in the team) of valid teams in that week
@@ -121,30 +138,32 @@ class Week_3(BaseController):
 
         for team, students in teams_to_check.items():
             for student in students:
+                if student == "":
+                    continue
+
                 index = audit_details.index[audit_details['Student']==student][0]
                 final_message=""
                 if audit_details["Fork"][index] == 1:
                     final_message=message["indiv_fork"]
                     local_message=""
-                    if audit_details["Test"][index] == 1:
+                    if audit_details["Test"][index] >= 1:
                         local_message+=message["test"]
-                    if audit_details["README"][index] == 1:
+                    if audit_details["UG"][index] >= 1:
                         local_message+=message["docs"]
                     if len(local_message)>1:
-                        local_message="\n Kudos for doing these too:"+local_message
-                    final_message = final_message.format(student, student_forks[student].full_name, COURSE, \
-                                                         args.end_date, local_message, args.end_date, COURSE_EMAIL)
-                else:
+                        local_message="\n\n Kudos for doing these too:"+local_message
+                    final_message = final_message.format(student_details[student][1], student_forks[student].full_name, \
+                                                         args.end_date, local_message, COURSE, args.end_date, COURSE)
+                
+                    if audit_details["Java"][index] ==0:
+                        final_message =""
+
+                if final_message=="":
                     final_message=message["indiv_no_fork"]
-                    final_message=final_message.format(student, args.end_date)
+                    final_message=final_message.format(student_details[student][1], student+"/addressbook-level1", COURSE, args.end_date, COURSE)
 
                 feedback_messages[student]=final_message
-                
-                # try:
-                #     user=Github(self.cfg.get_api_key()).get_user(student)
-                #     print(student, user.email)
-                # except:
-                #     pass
+
         return feedback_messages
 
     def read_audit_details(self, args):
@@ -165,7 +184,7 @@ class Week_3(BaseController):
         """
         logging.debug('CSV datafile: %s', args.csv)
         if parsers.common.are_files_readable(args.csv):
-            teams_to_check=self.extract_team_info(args.csv, args.day)
+            teams_to_check, student_details=self.extract_team_info(args.csv, args.day)
         student_forks_addressbook=self.get_student_forks(teams_to_check, args)
         code_change, test_change, student_UG=self.check_file_changes(teams_to_check, student_forks_addressbook, args)
         output_file=self.write_week_to_csv(teams_to_check, list(student_forks_addressbook.keys()), code_change, \
@@ -183,7 +202,7 @@ class Week_3(BaseController):
                 student_UG[student]=0
 
         start_datetime=datetime.datetime.strptime(args.start_date, '%d/%m/%Y')
-        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')
+        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+timedelta(days=1)
 
         for student, fork in forks.items():
             print(fork.full_name)
@@ -193,11 +212,11 @@ class Week_3(BaseController):
                     if login_name == student:
                         for file in commit.files:
                             if ((JAVA in file.filename) or (FXML in file.filename)) and (login_name is not None):
-                                code_change[login_name]+=file.changes
+                                code_change[login_name]+=1
                             elif (TEST in file.filename) and (login_name is not None):
-                                test_change[login_name]+=file.changes
+                                test_change[login_name]+=1
                             elif (USER_GUIDE in file.filename) and (login_name is not None):
-                                student_UG[login_name]+=file.changes
+                                student_UG[login_name]+=1
                 except:
                     continue
         return code_change, test_change, student_UG
@@ -205,19 +224,16 @@ class Week_3(BaseController):
 
 
     def extract_team_info(self, csv_file, day):
-        """
-        Extracts relevant team (and their students) details based on the day of the week
-        :param csv_file: location fo the csv_file which contains team information for the course
-        :param day: day of the week - teams belonging to this day shall be considered
-        :return team_list: dictionary of relevant teams and the students within them
-        """
-        user_list = parsers.csvparser.get_rows_as_list(csv_file)[1:]
-        users_to_check = list(map(lambda x: [x[-1].lower(), x[-2]],
-                              filter(lambda x: x[1][0] == day, user_list)))
-        team_list = defaultdict(list)
-        for user,team in users_to_check :
+
+        user_list=parsers.csvparser.get_rows_as_list(csv_file)[1:]
+        users_to_check=list(map(lambda x: [x[-1].lower().strip(), x[-2], x[-3], x[0]],
+                              filter(lambda x: x[3][0] == day, user_list)))
+        team_list=defaultdict(list)
+        student_details={}
+        for user, team, email, name in users_to_check :
             team_list[team].append(user)
-        return team_list
+            student_details[user]=(email, name)
+        return team_list, student_details
 
 
     def get_student_forks(self, team_list, args):
@@ -232,6 +248,7 @@ class Week_3(BaseController):
             student_name=fork.full_name.split("/")[0].lower()
             if student_name in student_list:
                 student_forks[student_name]=fork
+
         return student_forks
 
     def write_week_to_csv(self, team_list, fork_list, code_changes, test_changes, ug_changes, day) :
@@ -251,10 +268,11 @@ class Week_3(BaseController):
                 to_print.append(student)
                 to_print.append(team)
                 to_print.append(int(student in fork_list))
-                to_print.append(int(code_changes[student] > 0))
-                to_print.append(int(test_changes[student] > 0))
-                to_print.append(int(ug_changes[student] > 0))
-                to_print .append(int(False))
-                wr.writerow(to_print)
+                to_print.append(int(code_changes[student]))
+                to_print.append(int(test_changes[student]))
+                to_print.append(int(ug_changes[student]))
+
+                if student != "":
+                    wr.writerow(to_print)
 
         return output_file
