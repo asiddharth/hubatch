@@ -23,9 +23,13 @@ GMAIL_PASSWORD = 'cs2113.bot.feedback'
 TEST_EMAIL = "hdevamanyu@student.nitw.ac.in"
 
 ADDRESSBOOK_REPO = "nusCS2113-AY1819S1/addressbook-level1"
+
 PRODUCTION = False
 ##############################################################
 
+COMMITS_TO_IGNORE = ["ca2ab8c7cbf6b303f6e93327fbbdcc8250714067", "a9270ee306badf96936da1ba6dbf98f95cc49ed7", \
+                     "48d94378331364a0a0fa3748817bcaae15f33893", "13daa30527fb541e6e7d073ec308537d1f21d871", \
+                     "1827da83a97e94fd7cd2c663f3c2a2b6f114250e"]
 COURSE_EMAIL = COURSE.lower()+"@comp.nus.edu.sg"
 DEVELOPER_GUIDE = "DeveloperGuide.adoc"
 USER_GUIDE = "UserGuide.adoc"
@@ -205,20 +209,29 @@ class Week_3(BaseController):
         end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+timedelta(days=1)
 
         for student, fork in forks.items():
+
+            branches=[]
+            for branch in fork.get_branches():
+                branches.append(branch.name)
+
             print(fork.full_name)
-            for commit in fork.get_commits(since=start_datetime, until=end_datetime):
-                try:
-                    login_name = commit.author.login.lower()
-                    if login_name == student:
-                        for file in commit.files:
-                            if ((JAVA in file.filename) or (FXML in file.filename)) and (login_name is not None):
-                                code_change[login_name]+=1
-                            elif (TEST in file.filename) and (login_name is not None):
-                                test_change[login_name]+=1
-                            elif (USER_GUIDE in file.filename) and (login_name is not None):
-                                student_UG[login_name]+=1
-                except:
-                    continue
+            for branch in branches:
+                for commit in fork.get_commits(sha=branch, since=start_datetime, until=end_datetime):
+                    try:
+                        # login_name = commit.author.login.lower()
+                        login_name = student
+                        commit_sha = commit.sha
+                        # if login_name == student:
+                        if commit_sha not in COMMITS_TO_IGNORE:
+                            for file in commit.files:
+                                if ((JAVA in file.filename) or (FXML in file.filename)) and (login_name is not None):
+                                    code_change[login_name]+=1
+                                elif (TEST in file.filename) and (login_name is not None):
+                                    test_change[login_name]+=1
+                                elif (USER_GUIDE in file.filename) and (login_name is not None):
+                                    student_UG[login_name]+=1
+                    except:
+                        continue
         return code_change, test_change, student_UG
 
 
