@@ -1,5 +1,5 @@
 from controllers import IssueController, OrganisationController, TeamProjectMergeStatusDetector
-from controllers import AddressbookPRDetector, CreateFeedback, Week_6, General, Week_3
+from controllers import AddressbookPRDetector, CreateFeedback, Week_6, General, Week_3, TADuties
 from common.config import AppConfig
 from connectors.github import GitHubConnector
 from github import Github
@@ -18,6 +18,7 @@ create_feedback_ctrl = CreateFeedback(cfg)
 week_6_ctrl = Week_6(cfg)
 week_3_ctrl = Week_3(cfg)
 general_ctrl = General(cfg)
+track_ta = TADuties(cfg)
 
 def test():
     """Tests sample APIs (to be removed later)"""
@@ -40,7 +41,20 @@ def test():
     # for i in range(100) :
     #     ghc.create_issue(title='ThrottleTest ' + str(i),msg='DummyTesxt', assignee=None)
 
-    repo = GitHubConnector(cfg.get_api_key(),  "CS2103JAN2018-W09-B2/main", "CS2103JAN2018-W09-B2").repo
+    repo = Github(cfg.get_api_key()).get_repo("se-edu/addressbook-level1")
+    start_datetime=datetime.datetime.strptime("30/8/2017", '%d/%m/%Y')
+    end_datetime=datetime.datetime.strptime("2/9/2017", '%d/%m/%Y')
+    print(start_datetime, end_datetime)
+
+    # for branch in repo.get_branches():
+    #     print(branch.name)
+    # exit()
+
+    for commit in repo.get_commits(sha = "add-sort", since=start_datetime, until=end_datetime):
+        print(commit.commit.message)
+    exit()
+
+
     for pr in repo.get_pulls(state="all", sort="updated", direction="desc"):
         for commit in pr.get_commits():
             for file in commit.files:
@@ -71,12 +85,11 @@ def setup_argparse():
     week_6_ctrl.setup_argparse(subparsers)
     week_3_ctrl.setup_argparse(subparsers)
     general_ctrl.setup_argparse(subparsers)
+    track_ta.setup_argparse(subparsers)
 
     return parser
 
 if __name__ == '__main__':
-    # test()
-    # exit()
 
     setup_logger()
     logging.info('hubatch - GitHub CLI tools: Started!')
