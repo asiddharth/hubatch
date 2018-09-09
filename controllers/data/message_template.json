@@ -8,8 +8,13 @@
 	"week3":{
 		"mail_subject": "{}: Feedback for Week {}",
 		"indiv_fork": "Dear {},\n\n We noted that you have updated your addressbook-level1 fork at {} as per LO W3.9 by {}. Good job! \n You have been awarded 2 participation points. {} \n\n Note: The above observation was done by the {}-feedback-bot and covers changes up to {} only. \n If you think the above observation is incorrect, please reply to this email.  \n\nRegards,\n{}-feedback-bot",
-		"indiv_no_fork": "Dear {}, \n\n It seems you have not updated your addressbook-level1 fork at {} as per LO W3.9. \n\n If you tried to do it but faced difficulties, please ask your peers/tutor for help, preferably during this week's tutorial. \n\n The good news is you can still earn the participation marks for it if you managed to complete it by Sep 9 midnight. \n\n Note: The above observation was done by the {}-feedback-bot and covers changes up to {} only. \n If you think the above observation is incorrect, please reply to this email.  \n\nRegards,\n{}-feedback-bot",
+		"indiv_no_fork": "Dear {}, \n\n It seems you have not updated your addressbook-level1 fork at {} as per LO W3.9. \n\n If you tried to do it but faced difficulties, please ask your peers/tutor for help, preferably during this week's tutorial. \n\n The good news is you can still earn the participation marks for it if you managed to complete it by Sep 9 midnight. \n\n Note: The above observation was done by the {}-feedback-bot and covers changes up to {} only. \n Only forks from organization: nusCS2113-AY1819S1 are considered. \n If you think the above observation is incorrect, please reply to this email. \n\nRegards,\n{}-feedback-bot",
 		"test": "\n - Updated tests",
 		"docs": "\n - Updated docs"
+	},
+
+	"ta-reminder":{
+		"mail_subject":"Pending reviews for PRs in {}",
+		"mail_body":"Dear {},\n\n This is a gentle reminder to review the PRs assigned to you.\n The list of the pending PRs are: \n\n {} \n\n If you find any discrepancy, please reply to this email thread. \n\nRegards,\n{}-feedback-bot"
 	}
 }
