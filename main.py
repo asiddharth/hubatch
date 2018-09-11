@@ -1,5 +1,6 @@
 from controllers import IssueController, OrganisationController, TeamProjectMergeStatusDetector
 from controllers import AddressbookPRDetector, CreateFeedback, Week_6, General, Week_3, TADuties
+from controllers import Week_5
 from common.config import AppConfig
 from connectors.github import GitHubConnector
 from github import Github
@@ -17,11 +18,25 @@ addressbook_ctrl = AddressbookPRDetector(cfg)
 create_feedback_ctrl = CreateFeedback(cfg)
 week_6_ctrl = Week_6(cfg)
 week_3_ctrl = Week_3(cfg)
+week_5_ctrl = Week_5(cfg)
 general_ctrl = General(cfg)
 track_ta = TADuties(cfg)
 
 def test():
     """Tests sample APIs (to be removed later)"""
+
+    start_datetime=datetime.datetime.strptime("9/9/2018", '%d/%m/%Y')
+    end_datetime=datetime.datetime.strptime("11/9/2018", '%d/%m/%Y')
+    repo = Github(cfg.get_api_key()).get_repo("DummyTA1/main")
+    
+    for commit in repo.get_commits( since=start_datetime, until=end_datetime):
+        try:
+            print(commit.author.login , commit.author.email, commit.commit.author.name, commit.commit.author.email)
+        except:
+            print(commit.commit.author.name, commit.commit.author.email)
+        # print(commit.commit.author.name, commit.commit.author.email)
+    exit()
+
 
     # sha = "5cc6d8b2dcb21742917a00feed277c55c686c9f7"
     # gh = Github(cfg.get_api_key())
@@ -41,26 +56,26 @@ def test():
     # for i in range(100) :
     #     ghc.create_issue(title='ThrottleTest ' + str(i),msg='DummyTesxt', assignee=None)
 
-    repo = Github(cfg.get_api_key()).get_repo("se-edu/addressbook-level1")
-    start_datetime=datetime.datetime.strptime("30/8/2017", '%d/%m/%Y')
-    end_datetime=datetime.datetime.strptime("2/9/2017", '%d/%m/%Y')
-    print(start_datetime, end_datetime)
+    # repo = Github(cfg.get_api_key()).get_repo("se-edu/addressbook-level1")
+    # start_datetime=datetime.datetime.strptime("30/8/2017", '%d/%m/%Y')
+    # end_datetime=datetime.datetime.strptime("2/9/2017", '%d/%m/%Y')
+    # print(start_datetime, end_datetime)
 
     # for branch in repo.get_branches():
     #     print(branch.name)
     # exit()
 
-    for commit in repo.get_commits(sha = "add-sort", since=start_datetime, until=end_datetime):
-        print(commit.commit.message)
-    exit()
+    # for commit in repo.get_commits(sha = "add-sort", since=start_datetime, until=end_datetime):
+    #     print(commit.commit.message)
+    # exit()
 
 
-    for pr in repo.get_pulls(state="all", sort="updated", direction="desc"):
-        for commit in pr.get_commits():
-            for file in commit.files:
-                print(commit.author.login, file.filename, file.changes)
-        print()
-    print(repo.full_name)
+    # for pr in repo.get_pulls(state="all", sort="updated", direction="desc"):
+    #     for commit in pr.get_commits():
+    #         for file in commit.files:
+    #             print(commit.author.login, file.filename, file.changes)
+    #     print()
+    # print(repo.full_name)
 
 def setup_logger():
     """Sets up the logger"""
@@ -84,6 +99,7 @@ def setup_argparse():
     create_feedback_ctrl.setup_argparse(subparsers)
     week_6_ctrl.setup_argparse(subparsers)
     week_3_ctrl.setup_argparse(subparsers)
+    week_5_ctrl.setup_argparse(subparsers)
     general_ctrl.setup_argparse(subparsers)
     track_ta.setup_argparse(subparsers)
 

@@ -13,8 +13,18 @@
 		"docs": "\n - Updated docs"
 	},
 
+	"week5":{
+		"mail_subject": "{}: Feedback for Week {}",
+		"indiv_PR": "Dear {},\n\n We noted that you have created a PR as per LO W5.11 by {}.\n Good job! You have been awarded {} participation points: \n\n * For updating the code: {} \n * For updating tests and/or documentation: {} {}\n\n {} \n\n Note: The above observation was done by the {}-feedback-bot and covers changes up to {} only. \n If you think the above observation is incorrect, please reply to this email.  \n\nRegards,\n{}-feedback-bot",
+		"indiv_no_PR": "Dear {}, \n\n We were unable to detect a PR from you for LO W5.11 by {}. \n\n If it was because you encountered difficulties while attempting that LO, please get help from your tutor. \n\n {} \n\n Note: The above observation was done by the {}-feedback-bot and covers changes up to {} only. \n If you think the above observation is incorrect, please reply to this email. \n\nRegards,\n{}-feedback-bot",
+		"bonus": "We also noted that you have reviewed PRs created by some tutorial-mates, which earns you the additional participation point.",
+		"no_bonus": "We did not detect that you have reviewed PRs created by some tutorial-mates, which could have earned you a bonus participation mark."
+	},
+
 	"ta-reminder":{
 		"mail_subject":"Pending reviews for PRs in {}",
-		"mail_body":"Dear {},\n\n This is a gentle reminder to review the PRs assigned to you.\n The list of the pending PRs are: \n\n {} \n\n If you find any discrepancy, please reply to this email thread. \n\nRegards,\n{}-feedback-bot"
+		"mail_body":"Dear {},\n\n This is a gentle reminder to review the PRs assigned to you.\n The list of the pending PRs are: \n\n {} \n\n If you find any discrepancy, please reply to this email thread. \n\nRegards,\n{}-feedback-bot",
+		"mail_body_sterner":"Dear {},\n\n The following PRs are pending reviews past the review deadline. Please review them ASAP: \n\n {} \n\n If you find any discrepancy, please reply to this email thread. \n\nRegards,\n{}-feedback-bot"
 	}
+
 }
