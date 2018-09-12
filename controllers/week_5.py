@@ -26,7 +26,7 @@ TEST_EMAIL = "hdevamanyu@student.nitw.ac.in"
 
 ADDRESSBOOK_REPO = "nusCS2113-AY1819S1/addressbook-level2"
 QUESTION_TO_CHECK = "[w5.11]"
-PRODUCTION = True
+PRODUCTION = False
 ##############################################################
 
 COURSE_EMAIL = COURSE.lower()+"@comp.nus.edu.sg"
@@ -220,12 +220,37 @@ class Week_5(BaseController):
         for pull_request in addressbook.get_pulls(state="all", sort="updated", direction="desc"):
             if (pull_request.created_at <= end_datetime) and (pull_request.created_at >= start_datetime):
 
+
                 if self.is_invalid_pr(pull_request.labels):
                     continue
 
+                # if pull_request.title == "[W5.11][W12-1]Elston Aw":
+                #     print(pull_request.title)
+
+                #     print("\n Get comments:")
+                #     for comment in (pull_request.get_comments()+pull_request.get_issue_comments()+pull_request.get_review_comments()):
+                #         print(comment.user.login)
+
+                #     print("\n Get Reviews:")
+                #     for comment in pull_request.get_reviews():
+                #         print(comment.user.login,comment.state)
+                #     print(pull_request.state)
+                #     exit()
+
+                # Acquiring info for peer reviews
                 for comment in pull_request.get_issue_comments():
                     if (pull_request.user.login != comment.user.login): 
                         peer_review_students.append(comment.user.login.lower())
+                for comment in pull_request.get_comments():
+                    if (pull_request.user.login != comment.user.login):
+                        peer_review_students.append(comment.user.login.lower())
+                for comment in pull_request.get_review_comments():
+                    if (pull_request.user.login != comment.user.login):
+                        peer_review_students.append(comment.user.login.lower())
+                for comment in pull_request.get_reviews():
+                    if (pull_request.user.login != comment.user.login):
+                        peer_review_students.append(comment.user.login.lower())
+
 
                 try:
                     title_prefix = re.search('\[(W|w).*?\..*?\]', pull_request.title).group()
