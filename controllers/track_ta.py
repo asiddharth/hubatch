@@ -169,6 +169,9 @@ class TADuties(BaseController):
                         if label.name.lower() in ACCEPTED_LABELS:
                             REVIEW_DONE = True
 
+                    if pull_request.state == "closed" :
+                        REVIEW_DONE = True
+
                     if not REVIEW_DONE:
                         reviews_not_done[ta.login].append(pull_request.html_url)
 
