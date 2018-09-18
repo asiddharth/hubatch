@@ -7,15 +7,35 @@ from github import Github, GithubException
 
 import parsers
 import sys
+import smtplib
 import datetime
+from datetime import timedelta
 import os
 import csv
+import re
 import json
 from collections import defaultdict
 
 import logging, time
 
-TEAM_REPO_PREFIX = "CS2103JAN2018-"
+#############################################################
+COURSE = "CS2113"
+TEAM_REPO_PREFIX = "CS2113-AY1819S1-"
+GMAIL_USER = 'cs2113.bot@gmail.com'  
+GMAIL_PASSWORD = 'cs2113.bot.feedback'
+MODULE_EMAIL = "cs2113@comp.nus.edu.sg"
+
+TEST_EMAIL = "hdevamanyu@student.nitw.ac.in"
+
+ADDRESSBOOK_REPO = ["nusCS2113-AY1819S1/addressbook-level4", "nusCS2113-AY1819S1/addressbook-level3"]
+AB3="https://github.com/nusCS2113-AY1819S1/addressbook-level3"
+AB4="https://github.com/nusCS2113-AY1819S1/addressbook-level4"
+LINK1 = "https://github.com/{}{}/main"
+LINK2 = "https://nuscs2113-ay1819s1.github.io/website/admin/project-w06-mid-v11.html"
+PRODUCTION = False
+##############################################################
+
+
 UI_PNG_SUBSTRINGS = ["ui", ".png"]
 DEVELOPER_GUIDE = "DeveloperGuide.adoc"
 USER_GUIDE = "UserGuide.adoc"
@@ -25,7 +45,7 @@ JAVA = ".java"
 FXML = ".fxml"
 MESSAGE_TEMPLATE = "controllers/data/message_template.json"
 OUTPUT_DIR = "./output/"
-CSV_HEADER = ["Student", "Team", "Repo", "Fork", "DG", "UG", "AboutUs", "README", "Java", "RELEASE", "JAR"]
+CSV_HEADER = ["Student", "Team", "Team_Repo", "Team_PR", "Fork", "DG", "UG", "AboutUs", "README", "Java"]
 DUMMY = "dummy"
 WEEK = 6
 SLEEP_TIME = 3
@@ -69,27 +89,28 @@ class Week_6(BaseController):
         parser=subparsers.add_parser('post-feedback', help='create feedback messages for each team')
         parser.add_argument('-csv', type=str,
                             help='filename of the CSV containing a list of GitHub users and meta-details')
+        parser.add_argument('-tutor_map', type=str,
+                            help='filename of the CSV containing team tutor mapping')
         parser.add_argument('-audit_csv', type=str,
                             help='filename of the CSV containing audit details for each student')
+        parser.add_argument('-e', '--end_date', type=str,
+                            help='Deadline of the commit submissions')
         parser.add_argument('-d', '--day', type=str,
                             help='which day\'s teams to consider for posting of feedback')
         parser.set_defaults(func=self.create_feedback)
 
 
     def audit_week(self, args):
-        """
-        Calculates student deliverables for the week and saves them to a csv file
-        Task-1: Check Team Repo Set Up
-        Task-2 Check the forks made by each student
-        Task-3 Check commits for DeveloperGuide.adoc, UserGuide.adoc, README.adoc, AboutUs.adoc, java/fxml code
-        """
+
         logging.debug('CSV datafile: %s', args.csv)
 
         team_repositories, teams_with_repo, team_list=self.check_team_repo_setup(args)
+        teams_with_PR=self.check_if_PR_sent(team_list, args)
         student_with_forks=self.check_team_forks(team_repositories)
         student_DGs, student_UGs, student_About_Us, \
             student_Readme, student_java_code = self.check_file_changes(team_repositories, team_list, args)
-        output_file=self.write_week_to_csv(team_list, teams_with_repo, student_with_forks, student_DGs, \
+
+        output_file=self.write_week_to_csv(team_list, teams_with_repo, teams_with_PR, student_with_forks, student_DGs, \
                                  student_UGs, student_About_Us, student_Readme, student_java_code,args.day)
 
     def create_feedback(self, args):
@@ -99,99 +120,150 @@ class Week_6(BaseController):
         logging.debug('Reading audit from csv: %s', args.csv)
 
         audit_details = self.read_audit_details(args)
-        teams_to_check=self.extract_team_info(args.csv, args.day)
-        teamwise_feedback_messages = self.get_feedback_message(teams_to_check, audit_details)
+        teams_to_check, student_details=self.extract_team_info(args.csv, args.day)
+        tutor_map=self.load_tutor_map(args.tutor_map)
+        feedback_messages, no_team_repo, no_issue_tracker, no_team_repo_list = self.get_feedback_message(teams_to_check, tutor_map, audit_details, args)
+        self.post_feedback(teams_to_check, feedback_messages, no_team_repo, no_team_repo_list, no_issue_tracker, student_details, tutor_map )
 
-        self.post_feedback(teamwise_feedback_messages)
 
-    def post_feedback(self, feedbacks):
+    def post_feedback(self, teams_to_check, feedbacks, no_team_repo, no_team_repo_list, no_issue_tracker, student_details, tutor_map):
         """
         Posts feedback to each teams repo
         :param feedback: dictionary of feedbacks[team] = feedback_message
         """
-
-        ghc=GitHubConnector(self.cfg.get_api_key(), self.cfg.get_repo(), self.cfg.get_organisation())
+        
 
         for team, feedback in feedbacks.items():
-            print(team)
-            ghc.create_issue(title='Feedback on progress for week {} : Team {}'.format(WEEK, team), msg=feedback, assignee=None)
-            time.sleep(SLEEP_TIME)
 
-    def get_feedback_message(self, teams_to_check, audit_details):
-        """
-        Creates the feedback message for each team
-        :param teams_to_check: dictionary(key=teams, value=list of students in the team) of valid teams in that week
-        :param audit_details: pandas dataframe of audit_csv
-        :return feedback_messages: dictionary of feedbacks[team] = feedback_message
-        """
+            if team in no_team_repo_list:
+                student_feedback_messages, student_ta={}, {}
+                for student in teams_to_check[team]:
+                    student_feedback_messages[student]=no_team_repo[student]
+                    student_ta[student]=tutor_map[team][1]
+                self.mail_feedback(student_feedback_messages, student_details, student_ta)
+            else:
+                print(team)
+                if PRODUCTION:
+                    ghc=GitHubConnector(self.cfg.get_api_key(), TEAM_REPO_PREFIX+str(team)+"/main", TEAM_REPO_PREFIX+str(team))
+                else:
+                    ghc=GitHubConnector(self.cfg.get_api_key(), self.cfg.get_repo(), self.cfg.get_organisation())
+
+                result = ghc.create_issue(title='Feedback on week {} project progress'.format(WEEK), msg=feedback, assignee=None)
+
+                if result == False:
+
+                    # Have to mail no_issue_tracker
+                    student_feedback_messages, student_ta={}, {}
+                    for student in teams_to_check[team]:
+                        student_feedback_messages[student]=no_issue_tracker[student]
+                        student_ta[student]=tutor_map[team][1]
+                    self.mail_feedback(student_feedback_messages, student_details, student_ta)
+
+                time.sleep(SLEEP_TIME)
+
+    def mail_feedback(self, student_feedback_messages, student_details, student_ta):
+
+        server_ssl = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server_ssl.ehlo()
+        server_ssl.login(GMAIL_USER, GMAIL_PASSWORD)
+
+        mail_subject=message_template["week{}".format(WEEK)]["mail_subject"]
+
+        for student, message in student_feedback_messages.items():
+            mail_message = '{}'.format(message)
+
+            toaddr = [student_details[student][0] if PRODUCTION else TEST_EMAIL]
+            TA_EMAIL = student_ta[student]
+
+            if PRODUCTION:
+                cc_emails = [MODULE_EMAIL, TA_EMAIL]
+            else:
+                cc_emails = []
+            mail_message = "To: %s" % ', '.join(toaddr) + "\r\n" + \
+                           "CC: %s" % ', '.join(cc_emails) + "\r\n" + \
+                            mail_message
+
+            toaddr = toaddr + cc_emails
+            print(toaddr, mail_message)
+
+            mail = server_ssl.sendmail(GMAIL_USER, toaddr, mail_message)
+
+            time.sleep(SLEEP_TIME)
+        server_ssl.close()
+
+    def get_feedback_message(self, teams_to_check, tutor_map, audit_details, args):
 
         message = message_template["week{}".format(WEEK)]
         feedback_messages={}
+        no_issue_tracker={}
+        no_team_repo={}
+        no_team_repo_list=[]
 
         for team, students in teams_to_check.items():
-            
+                
             final_message=""
+
             # Creating team feedback message
             team_index=audit_details.index[audit_details['Team']==team][0]
-            team_message="\n\tCreation of project repository."
-            if audit_details["Repo"][team_index]:
-                message["team"]=message["team"].format(team, team_message, "\n\tNone")
+            
+            # No team repo created for concerning students
+            if int(audit_details["Team_Repo"][team_index]) == 0:
+                no_team_repo_list.append(team)
+                for student in students:
+                    no_team_repo[student]=message["no_team_repo"].format(team, LINK1.format(TEAM_REPO_PREFIX,team), LINK2, COURSE, args.end_date)
+
+            # Issue tracker not enabled message for all students
+            for student in students:
+                no_issue_tracker[student]=message["no_issue_tracker"].format(team, LINK1.format(TEAM_REPO_PREFIX,team), LINK2, COURSE, args.end_date)
+
+            team_message=message["team"]
+            if int(audit_details["Team_PR"][team_index])>=1:
+                team_message=team_message.format(LINK2, message["pr_created"].format(AB3, AB4), "\nNone")
             else:
-                message["team"]=message["team"].format(team, "\n\tNone", team_message)
-            final_message+= message["team"]
+                team_message=team_message.format(LINK2, "", message["pr_not_created"].format(AB3, AB4))
+
+            final_message+= team_message
+
 
             #Creating individual feedback messageer
-            student_message_Fork = "\n\tCreating personal forks of the team project repositoty."
-            student_message_DG = "\n\tUpdating the Developer Guide."
-            student_message_UG = "\n\tUpdating the User Guide."
-            student_message_AboutUs = "\n\tUpdating the About Us page."
-            student_message_README = "\n\tUpdating the README file."
-            student_message_Java = "\n\tUpdating Java code."
 
             for student in students:
-                done_message, not_done_message="", ""   
+                indiv_message=message["indiv"]
+                done_message, not_done_message="", ""
                 indiv_index=audit_details.index[audit_details['Student']==student][0]
                 
-                if audit_details["Fork"][indiv_index]:
-                    done_message+=student_message_Fork
+                if int(audit_details["Fork"][indiv_index])>=1:
+                    done_message+=message["repo_forked"]
                 else:
-                    not_done_message+=student_message_Fork
+                    not_done_message+=message["repo_not_forked"]
 
-                if audit_details["DG"][indiv_index]:
-                    done_message+=student_message_DG
+                if (int(audit_details["DG"][indiv_index])>=1) or (int(audit_details["DG"][indiv_index])>=1) or \
+                        (int(audit_details["AboutUs"][indiv_index])>=1) or (int(audit_details["README"][indiv_index])>=1):
+                    done_message+=message["documentation"]
                 else:
-                    not_done_message+=student_message_DG
+                    not_done_message+=message["documentation_not_done"]
 
-                if audit_details["UG"][indiv_index]:
-                    done_message+=student_message_UG
+                if int(audit_details["Java"][indiv_index])>=1:
+                    done_message+=message["java"]
                 else:
-                    not_done_message+=student_message_UG
+                    not_done_message+=message["java_not_done"]
 
-                if audit_details["AboutUs"][indiv_index]:
-                    done_message+=student_message_AboutUs
+                if done_message=="":
+                    done_message="\nNone"
+                if not_done_message=="":
+                    not_done_message="\nNone"
+
+                if PRODUCTION:
+                    final_message+= indiv_message.format(student, done_message, not_done_message)
                 else:
-                    not_done_message+=student_message_AboutUs
-
-                if audit_details["README"][indiv_index]:
-                    done_message+=student_message_README
-                else:
-                    not_done_message+=student_message_README
-
-                if audit_details["Java"][indiv_index]:
-                    done_message+=student_message_Java
-                else:
-                    not_done_message+=student_message_Java
-
-                if len(done_message)==0:
-                    done_message="\n\tNone"
-                if len(not_done_message)==0:
-                    not_done_message="\n\tNone"
-                final_message+= message["indiv"].format(DUMMY, done_message, not_done_message)
+                    final_message+= indiv_message.format(DUMMY, done_message, not_done_message)
             
-            final_message+=message["tutor"].format(DUMMY)
+            if PRODUCTION:
+                final_message+=message["tutor"].format(tutor_map[team][0], COURSE, args.end_date)
+            else:
+                final_message+=message["tutor"].format(DUMMY, COURSE, args.end_date)
             feedback_messages[team]=final_message
-
-        return feedback_messages
+        return feedback_messages, no_team_repo, no_issue_tracker, no_team_repo_list
 
     def read_audit_details(self, args):
         """
@@ -200,6 +272,25 @@ class Week_6(BaseController):
         user_audit_details = parsers.csvparser.get_pandas_list(args.audit_csv)
         return user_audit_details
 
+
+    def check_if_PR_sent(self, team_list, args):
+
+        start_datetime=datetime.datetime.strptime(args.start_date, '%d/%m/%Y')
+        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+timedelta(days=1)
+
+        team_PR=[]
+        for repo in ADDRESSBOOK_REPO:
+            repository =  Github(self.cfg.get_api_key()).get_repo(repo)
+            for pull_request in repository.get_pulls(state="open", sort="updated", direction="desc"):
+                try:
+                    if (pull_request.created_at<=end_datetime) and (pull_request.created_at>=start_datetime):
+                        pull_request_login = pull_request.user.login.lower()
+                        pull_request_title = pull_request.title[:7].lower()
+                        title_prefix = re.search('\[{}..?-.\]'.format(args.day.lower()), pull_request_title).group()
+                        team_PR.append(title_prefix.lower()[1:-1])
+                except:
+                    continue
+        return team_PR
 
     def check_file_changes(self, repositories, team_list, args):
         """
@@ -222,38 +313,39 @@ class Week_6(BaseController):
 
 
         start_datetime=datetime.datetime.strptime(args.start_date, '%d/%m/%Y')
-        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')
+        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+timedelta(days=1)
 
         for repo, students in repositories:
             print(repo.full_name)
 
             for pull_request in repo.get_pulls(state="all", sort="updated", direction="desc"):
                 try:
-                    if (pull_request.created_at <= end_datetime) and (pull_request.created_at >= start_datetime):  
-                        for commit in pull_request.get_commits():
-                            login_name = commit.author.login.lower()
-                            for file in commit.files:
-                                if (DEVELOPER_GUIDE in file.filename) and (login_name is not None):
-                                    student_DGs[login_name]+=1
-                                elif (USER_GUIDE in file.filename) and (login_name is not None):
-                                    student_UGs[login_name]+=1
-                                elif (ABOUT_US in file.filename) and (login_name is not None):
-                                    student_About_Us[login_name]+=1
-                                elif (README in file.filename) and (login_name is not None):
-                                    student_Readme[login_name]+=1
-                                elif ((JAVA in file.filename) or (FXML in file.filename)) and (login_name is not None):
-                                    student_java_code[login_name]+=1
+                    if (pull_request.created_at<=end_datetime) and (pull_request.created_at>=start_datetime) \
+                            and (pull_request.state=="open" or pull_request.merged==True):
+
+                        pull_request_login = pull_request.user.login.lower()
+                        print(pull_request_login)
+
+                        for file in pull_request.get_files():
+                            filename = file.filename
+                            if int(file.changes)>0:
+                                if (DEVELOPER_GUIDE in file.filename) and (pull_request_login is not None):
+                                    student_DGs[pull_request_login]+=1
+                                elif (USER_GUIDE in file.filename) and (pull_request_login is not None):
+                                    student_UGs[pull_request_login]+=1
+                                elif (ABOUT_US in file.filename) and (pull_request_login is not None):
+                                    student_About_Us[pull_request_login]+=1
+                                elif (README in file.filename) and (pull_request_login is not None):
+                                    student_Readme[pull_request_login]+=1
+                                elif ((JAVA in file.filename) or (FXML in file.filename)) and (pull_request_login is not None):
+                                    student_java_code[pull_request_login]+=1
                 except:
                     continue
 
         return student_DGs, student_UGs, student_About_Us, student_Readme, student_java_code
 
     def check_team_forks(self, repositories):
-        """
-        Checks which students have created their personal forks
-        :param repositories: PyGitHub repository objects of all the team's repositories (teams which have repos created)
-        :return students_with_forks: list of students who have created personal forks of team repos
-        """
+        
         students_with_forks=[]
         for repo, students in repositories:
             forks_made=[fork.full_name.split("/")[0] for fork in repo.get_forks()]
@@ -263,90 +355,38 @@ class Week_6(BaseController):
 
 
     def check_team_repo_setup(self, args):
-        """
-        Base function to check the creation of repos by relevant teams
-        :return repositories: PyGitHub repository objects of all the team's repositories (teams which have repos created)
-        :return teams_with_repo: list of teams who have created repo
-        :return teams_to_check: dictionary(key=teams, value=list of students in the team) of valid teams in that week
-        """
+
         if parsers.common.are_files_readable(args.csv):
-            teams_to_check=self.extract_team_info(args.csv, args.day)
+            teams_to_check, student_details=self.extract_team_info(args.csv, args.day)
             teams_with_repo, teams_without_repo, repositories=self.check_repo_existence(teams_to_check)
             return repositories, teams_with_repo, teams_to_check
 
         else:
             sys.exit(1)
 
-
-    def check_jar_and_releaseTag(self, args) :
-        if parsers.common.are_files_readable(args.csv):
-            start_datetime = datetime.datetime.strptime(args.start_date, '%d/%m/%Y')
-            end_datetime = datetime.datetime.strptime(args.end_date, '%d/%m/%Y')
-            teams_to_check = self.extract_team_info(args.csv, args.day)
-            teams_with_release, teams_without_release, teams_with_jar, teams_without_jar = \
-                self.check_jar_releaseTag_existence(teams_to_check, start_datetime, end_datetime)
-            return teams_with_release, teams_without_release, teams_with_jar, teams_without_jar
-
-        else :
-            sys.exit(1)
-
-    def check_team_ui_png(self, args):
-        teams_to_check = self.extract_team_info(args.csv, args.day)
-        team_ui_png = {}
-        for team, students in teams_to_check.items():
-            team_ui_png[team] = 0
-
-        start_datetime=datetime.datetime.strptime(args.start_date, '%d/%m/%Y')
-        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')
-
-        for team, students in teams_to_check.items():
-            organization = TEAM_REPO_PREFIX + str(team)
-            repo =  GitHubConnector(self.cfg.get_api_key(),organization+ "/main", organization).repo
-            found = False
-            for pull_request in repo.get_pulls(state="all", sort="updated", direction="desc"):
-                try:
-                    if (pull_request.created_at <= end_datetime) and (pull_request.created_at >= start_datetime) \
-                            and found == False:
-                        for commit in pull_request.get_commits():
-                            for file in commit.files:
-                                is_image_file = True
-                                for checkstring in UI_PNG_SUBSTRINGS :
-                                    is_image_file = True
-                                    if checkstring not in file.filename.lower() :
-                                        is_image_file = False
-                                        break
-                                if is_image_file == True :
-                                    team_ui_png[team] = 1
-                                    found = True
-                                    break
-                except:
-                    continue
-        return team_ui_png
-
     def extract_team_info(self, csv_file, day):
-        """
-        Extracts relevant team (and their students) details based on the day of the week
-        :param csv_file: location fo the csv_file which contains team information for the course
-        :param day: day of the week - teams belonging to this day shall be considered
-        :return team_list: dictionary of relevant teams and the students within them
-        """
-        user_list = parsers.csvparser.get_rows_as_list(csv_file)[1:]
-        users_to_check = list(map(lambda x: [x[-1].lower(), x[-2]],
-                              filter(lambda x: x[1][0] == day, user_list)))
-        team_list = defaultdict(list)
-        for user,team in users_to_check :
-            team_list[team].append(user)
-        return team_list
+
+        user_list=parsers.csvparser.get_rows_as_list(csv_file)[1:]
+        users_to_check=list(map(lambda x: [x[-2].lower().strip(), x[-3], x[-4], x[0], x[-1]],
+                              filter(lambda x: x[3][0] == day, user_list)))
+
+        team_list=defaultdict(list)
+        student_details={}
+        for user, team, email, name, team_no in users_to_check :
+            team_list[team+"-"+team_no[-1]].append(user)
+            student_details[user]=(email, name)
+        return team_list, student_details
+
+    def load_tutor_map(self, csv_file):
+        data=parsers.csvparser.get_rows_as_list(csv_file)
+        tutor_map={}
+        for datum in data:
+            tutor_map[datum[0]]=(datum[1].strip(), datum[2].strip())
+        return tutor_map
 
 
     def check_repo_existence(self, teams_to_check):
-        """
-        Checks whether a repo has been created for each team
-        :param teams_to_check: dictionary of teams (and their students) whose repo's need to be checked
-        :return teams_with_repo: list of teams who have created repo
-        :return teams_without_repo: list of teams who haven't created repo
-        :return repo_objects: PyGitHub repository objects of all the team's repositories (teams which have repos created)
-        """
+        
         teams_with_repo, teams_without_repo={}, {}
         repo_objects = []
         for team, students in teams_to_check.items():
@@ -384,21 +424,9 @@ class Week_6(BaseController):
                 logging.error('Unexpected error Team {}'.format(team))
         return teams_with_release, teams_without_release, teams_with_jar, teams_without_jar
 
-    def write_week_to_csv(self, team_list, teams_with_repo, student_with_forks, student_DGs, \
-                            student_UGs, student_About_Us, student_Readme, student_java_code, day) :
-        """
-        Writes audit details of week in a csv file
-        :param team_list: dictionary of all the teams to be considered for corresponding "day"
-        :param teams_with_repo: list of all the teams which have created their project repo
-        :param student_with_forks: list of all the students who have created personal forks
-        :param student_DGs: dictionary[student] = count of DG commits in the provided time
-        :param student_UGs: dictionary[student] = count of UG commits in the provided time
-        :param student_About_Us: dictionary[student] = count of About_Us file commits in the provided time
-        :param student_Readme: dictionary[student] = count of Readme file commits in the provided time
-        :param student_java_code: dictionary[student] = count of Java/Fxml files updated by student in provided time
-        :param day: day of the week whose teams are considered
-        :return output_file: location of the audit output csv file
-        """
+    def write_week_to_csv(self, team_list, teams_with_repo, teams_with_PR, student_with_forks, student_DGs, \
+                            student_UGs, student_About_Us, student_Readme, student_java_code, day):
+
         output_path = OUTPUT_DIR+"/week_{}/".format(WEEK)
         output_file = output_path+"week_{}_audit_day{}.csv".format(WEEK, day)
 
@@ -413,13 +441,14 @@ class Week_6(BaseController):
                 to_print=[]
                 to_print.append(student)
                 to_print.append(team)
-                to_print.append(team in teams_with_repo)
-                to_print.append(student in student_with_forks)
-                to_print.append(student_DGs[student] > 0)
-                to_print.append(student_UGs[student] > 0)
-                to_print.append(student_About_Us[student] > 0)
-                to_print.append(student_Readme[student] > 0)
-                to_print .append(student_java_code[student] > 0)
+                to_print.append(int(team in teams_with_repo))
+                to_print.append(int(team.lower() in teams_with_PR))
+                to_print.append(int(student in student_with_forks))
+                to_print.append(int(student_DGs[student] > 0))
+                to_print.append(int(student_UGs[student] > 0))
+                to_print.append(int(student_About_Us[student] > 0))
+                to_print.append(int(student_Readme[student] > 0))
+                to_print .append(int(student_java_code[student] > 0))
                 wr.writerow(to_print)
 
         return output_file
