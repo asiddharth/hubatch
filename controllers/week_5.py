@@ -26,7 +26,7 @@ TEST_EMAIL = "hdevamanyu@student.nitw.ac.in"
 
 ADDRESSBOOK_REPO = "nusCS2113-AY1819S1/addressbook-level2"
 QUESTION_TO_CHECK = "[w5.11]"
-PRODUCTION = False
+PRODUCTION = True
 ##############################################################
 
 COURSE_EMAIL = COURSE.lower()+"@comp.nus.edu.sg"
@@ -256,6 +256,7 @@ class Week_5(BaseController):
                     title_prefix = re.search('\[(W|w).*?\..*?\]', pull_request.title).group()
                     if title_prefix.lower() == QUESTION_TO_CHECK:
 
+                        # if (pull_request.title == "[W5.11][T09-04]Zeng Hao"):
                         commiter = pull_request.user.login.lower()
                         print(commiter)
                         for file in pull_request.get_files():
@@ -271,6 +272,7 @@ class Week_5(BaseController):
                                     Test_student[commiter]+=1
                                 if (TEST in filename) and (JAVA in filename):
                                     Junit_student[commiter]+=1
+                            # print(JAVA_student[commiter])
 
                         # for commit in pull_request.get_commits():
                         #     try:

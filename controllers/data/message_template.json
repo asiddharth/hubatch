@@ -1,8 +1,19 @@
 {
 	"week6":{
-		"team": "Subject: feedback on week 6 progress\n\nTeam {} progress noted (well done!):\n{}\nPending tasks:\n{}\n\n",
-		"indiv": "Individual progress of @{}:\nProgress noted (well done!):\n{}\n\nYet to receive:\n{}\n\n",
-		"tutor": "Tutor: @{} \n\nPlease reply in this thread if there are any inaccuracies in the above observations."
+		"indiv": "\n\n\n## Individual progress of @{}:\n\n### Progress noted (well done! :+1:):{}\n\n### Suggestions (to do soon):{}\n\n",
+		"tutor": "\n\nTutor: @{}\n\nNote: the above observation was done by the {}-feedback-bot and covers changes up to {} only. If you think the above observation is incorrect, please let us know by replying in this thread. Please include links to relevant PRs/comments in your response.",
+		"no_team_repo": "Subject: feedback on week 6 project progress\n\nDear team {}, \n\n We could not detect your team repo at the expected URL:\n {} \n\n We encourage you to set up the team repo (or correct the org/repo name in case you used different names) and get started on the other team and individual activities as suggested by: \n {} \n\n Do ask for help from the tutor if you are facing any difficulties in the project. \n\n Note: the above observation was done by the {}-feedback-bot and covers changes up to {} only. If you think the above observation is incorrect, please let us know by replying to this email. Please include links to relevant PRs/comments in your response.",
+		"no_issue_tracker": "Subject: feedback on week 6 project progress\n\nDear team {}, \n\n We could not find issue-tracker enabled for your team repository:\n {} \n\n We encourage you to enable the issue-tracker and get started on the other team and individual activities as suggested by: \n {} \n\n Do ask for help from the tutor if you are facing any difficulties in the project. \n\n Note: the above observation was done by the {}-feedback-bot and covers changes up to {} only. If you think the above observation is incorrect, please let us know by replying to this email. Please include links to relevant PRs/comments in your response.",
+		"team": "Subject: feedback on week 6 project progress \n\nSee [mid-v1.1 progress guide]({}) for more details of the activities mentioned below. \n\n## Team progress\n\n### Progress noted (well done! :+1:):\n* Team org and repo set up with the correct names.{}\n\n### Suggestions (to do soon):{}",
+		"pr_created": "\n* PR created from team repo to [AB-3]({}) or [AB-4]({}) accordingly.",
+		"pr_not_created": "\n* Create a PR from your team repo to  [AB-3]({}) or [AB-4]({}) accordingly.",
+		"repo_forked": "\n* Team repo forked to your GitHub account.",
+		"documentation": "\n* PRs created to update documents.",
+		"java": "\n* PRs created to update Java code.",
+		"repo_not_forked": "\n* Fork team repo to your GitHub account.",
+		"documentation_not_done": "\n* Create PRs for your share of updating documents.",
+		"java_not_done": "\n* Create PRs to do a local change to the Java code.",
+		"mail_subject": "{}: Feedback for Week {}"
 	},
 
 	"week3":{
@@ -24,7 +35,7 @@
 	"ta-reminder":{
 		"mail_subject":"Pending reviews for PRs in {}",
 		"mail_body":"Dear {},\n\n This is a gentle reminder to review the PRs assigned to you.\n The list of the pending PRs are: \n\n {} \n\n If you find any discrepancy, please reply to this email thread. \n\nRegards,\n{}-feedback-bot",
-		"mail_body_sterner":"Dear {},\n\n The following PRs are pending reviews past the review deadline. Please review them ASAP: \n\n {} \n\n If you find any discrepancy, please reply to this email thread. \n\nRegards,\n{}-feedback-bot"
+		"mail_body_sterner":"Dear {},\n\n The following PRs are pending reviews past the review deadline. Please review them ASAP: \n\n {} \n\n Please ignore the PRs which students have prematurely closed. \n\n If you find any discrepancy, please reply to this email thread. \n\nRegards,\n{}-feedback-bot"
 	}
 
 }
