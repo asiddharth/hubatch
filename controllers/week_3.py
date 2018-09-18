@@ -124,6 +124,7 @@ class Week_3(BaseController):
             print(mail_message)
             
             dest_email = student_details[student][0] if PRODUCTION else TEST_EMAIL
+
             mail = server_ssl.sendmail(GMAIL_USER, dest_email, mail_message)
             time.sleep(SLEEP_TIME)
         server_ssl.close()
@@ -144,8 +145,10 @@ class Week_3(BaseController):
             for student in students:
                 if student == "":
                     continue
-
-                index = audit_details.index[audit_details['Student']==student][0]
+                try:
+                    index = audit_details.index[audit_details['Student']==student][0]
+                except:
+                    continue
                 final_message=""
                 if audit_details["Fork"][index] == 1:
                     final_message=message["indiv_fork"]
@@ -239,7 +242,7 @@ class Week_3(BaseController):
     def extract_team_info(self, csv_file, day):
 
         user_list=parsers.csvparser.get_rows_as_list(csv_file)[1:]
-        users_to_check=list(map(lambda x: [x[-1].lower().strip(), x[-2], x[-3], x[0]],
+        users_to_check=list(map(lambda x: [x[-2].lower().strip(), x[-3], x[-4], x[0]],
                               filter(lambda x: x[3][0] == day, user_list)))
         team_list=defaultdict(list)
         student_details={}

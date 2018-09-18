@@ -3,7 +3,7 @@ from controllers import AddressbookPRDetector, CreateFeedback, Week_6, General, 
 from controllers import Week_5
 from common.config import AppConfig
 from connectors.github import GitHubConnector
-from github import Github
+from github import Github, GithubException
 import datetime
 import parsers
 
@@ -25,18 +25,6 @@ track_ta = TADuties(cfg)
 def test():
     """Tests sample APIs (to be removed later)"""
 
-    start_datetime=datetime.datetime.strptime("9/9/2018", '%d/%m/%Y')
-    end_datetime=datetime.datetime.strptime("11/9/2018", '%d/%m/%Y')
-    repo = Github(cfg.get_api_key()).get_repo("DummyTA1/main")
-    
-    for commit in repo.get_commits( since=start_datetime, until=end_datetime):
-        try:
-            print(commit.author.login , commit.author.email, commit.commit.author.name, commit.commit.author.email)
-        except:
-            print(commit.commit.author.name, commit.commit.author.email)
-        # print(commit.commit.author.name, commit.commit.author.email)
-    exit()
-
 
     # sha = "5cc6d8b2dcb21742917a00feed277c55c686c9f7"
     # gh = Github(cfg.get_api_key())
@@ -46,15 +34,11 @@ def test():
 
     # exit()
 
-    #r = ghc.organisation.get_repo("main")
-    # r = ghc.repo
-    # # startdate = datetime.datetime(2018,1,27)
-    # # enddate = datetime.datetime(2018,8,14)
-    # #
-    # # for PR in r.get_pulls(state="closed"):
-    # #     print(PR.user, PR.closed_at, PR.is_merged())
-    # for i in range(100) :
-    #     ghc.create_issue(title='ThrottleTest ' + str(i),msg='DummyTesxt', assignee=None)
+    r = ghc.organisation.get_repo("main")
+    print(r.full_name)
+
+    for i in range(1) :
+        print(ghc.create_issue(title='ThrottleTest ' + str(i),msg='DummyTesxt', assignee=None))
 
     # repo = Github(cfg.get_api_key()).get_repo("se-edu/addressbook-level1")
     # start_datetime=datetime.datetime.strptime("30/8/2017", '%d/%m/%Y')

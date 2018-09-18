@@ -17,13 +17,17 @@ ORGANIZATION = "nusCS2113-AY1819S1"
 GMAIL_USER = 'cs2113.bot@gmail.com'  
 GMAIL_PASSWORD = 'cs2113.bot.feedback'
 TEST_EMAIL = "hdevamanyu@student.nitw.ac.in"
+TEST_EMAIL_2 = "devamanyu@gmail.com"
+LECTURER_EMAIL = "anarayan@comp.nus.edu.sg"
+HEAD_TA_EMAIL = "slewyh@comp.nus.edu.sg"
 
-PRODUCTION = False
+STERNER_MAIL = True
+PRODUCTION = True
 #############################################################
 
 
 REPO_PREFIX = "addressbook-level"
-ACCEPTED_LABELS = ["reviewed", "accepted w/ minimal review"]
+ACCEPTED_LABELS = ["reviewed", "kudos!!", "accepted w/ minimal review"]
 CSV_HEADER = ["TA", "Pending"]
 OUTPUT_DIR = "./output/"
 LEVELS = ["1", "2", "3", "4"]
@@ -100,8 +104,17 @@ class TADuties(BaseController):
                 print(name, email)
                 print(mail_message)
 
-                dest_email = email if PRODUCTION else TEST_EMAIL
-                mail = server_ssl.sendmail(GMAIL_USER, dest_email, mail_message)
+                toaddr = [email if PRODUCTION else TEST_EMAIL]
+                
+                if STERNER_MAIL:
+                    cc_emails = [LECTURER_EMAIL, HEAD_TA_EMAIL]
+                    mail_message = "To: %s" % ', '.join(toaddr) + "\r\n" + \
+                                   "CC: %s" % ', '.join(cc_emails) + "\r\n" + \
+                                    mail_message
+
+                    toaddr = toaddr + cc_emails
+
+                mail = server_ssl.sendmail(GMAIL_USER, toaddr, mail_message)
                 time.sleep(SLEEP_TIME)
         server_ssl.close()
 
@@ -120,7 +133,11 @@ class TADuties(BaseController):
                 for reviews in pending_reviews:
                     review_list+="\n "
                     review_list+= str(reviews)
-                reminder_message[gid]=message_template['ta-reminder']['mail_body'].format(name, review_list, COURSE)
+
+                if STERNER_MAIL:
+                    reminder_message[gid]=message_template['ta-reminder']['mail_body_sterner'].format(name, review_list, COURSE)
+                else:
+                    reminder_message[gid]=message_template['ta-reminder']['mail_body'].format(name, review_list, COURSE)
         return reminder_message
 
     def read_pending_reviews(self, args):
@@ -158,16 +175,25 @@ class TADuties(BaseController):
         for pull_request in repository.get_pulls(state="all", sort="updated", direction="desc"):
             print(pull_request.title)
 
-            if (not pull_request.title[:2].lower() == '[w') or (int(pull_request.title[2]) > int(args.week)):
+            try:
+                if (not pull_request.title[:2].lower() == '[w') or (int(pull_request.title[2]) > int(args.week)):
+                    continue
+            except:
                 continue
 
+            
             for ta in pull_request.assignees:
                 if ta.login.lower() in TA_github_ids:
-
                     REVIEW_DONE = False
                     for label in pull_request.labels:
                         if label.name.lower() in ACCEPTED_LABELS:
                             REVIEW_DONE = True
+                    
+                    if not REVIEW_DONE:
+                        for comment in pull_request.get_reviews():
+                            if comment.user.login == ta.login.lower():
+                                REVIEW_DONE = True
+                                break
 
                     if not REVIEW_DONE:
                         reviews_not_done[ta.login].append(pull_request.html_url)
