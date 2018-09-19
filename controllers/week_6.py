@@ -237,7 +237,7 @@ class Week_6(BaseController):
                 else:
                     not_done_message+=message["repo_not_forked"]
 
-                if (int(audit_details["DG"][indiv_index])>=1) or (int(audit_details["DG"][indiv_index])>=1) or \
+                if (int(audit_details["DG"][indiv_index])>=1) or (int(audit_details["UG"][indiv_index])>=1) or \
                         (int(audit_details["AboutUs"][indiv_index])>=1) or (int(audit_details["README"][indiv_index])>=1):
                     done_message+=message["documentation"]
                 else:
@@ -263,6 +263,10 @@ class Week_6(BaseController):
             else:
                 final_message+=message["tutor"].format(DUMMY, COURSE, args.end_date)
             feedback_messages[team]=final_message
+
+            if team == "W12-1":
+                print(feedback_messages[team])
+        exit()
         return feedback_messages, no_team_repo, no_issue_tracker, no_team_repo_list
 
     def read_audit_details(self, args):
@@ -350,6 +354,10 @@ class Week_6(BaseController):
         for repo, students in repositories:
             forks_made=[fork.full_name.split("/")[0] for fork in repo.get_forks()]
             students_with_forks+=forks_made
+
+        students_with_forks = [student.lower() for student in students_with_forks]
+        # print(student_with_forks)
+        # exit()
         return students_with_forks
 
 
