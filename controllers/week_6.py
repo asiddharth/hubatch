@@ -355,7 +355,9 @@ class Week_6(BaseController):
             forks_made=[fork.full_name.split("/")[0] for fork in repo.get_forks()]
             students_with_forks+=forks_made
 
-        students_with_forks = [student.lower() for student in sstudents_with_forks]
+        students_with_forks = [student.lower() for student in students_with_forks]
+        # print(student_with_forks)
+        # exit()
         return students_with_forks
 
 
