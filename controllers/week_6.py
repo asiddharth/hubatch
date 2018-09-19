@@ -106,7 +106,7 @@ class Week_6(BaseController):
 
         team_repositories, teams_with_repo, team_list=self.check_team_repo_setup(args)
         teams_with_PR=self.check_if_PR_sent(team_list, args)
-        student_with_forks=self.check_team_forks(team_repositories)
+        student_with_forks=self.check_team_forks(team_repositories, team_list)
         student_DGs, student_UGs, student_About_Us, \
             student_Readme, student_java_code = self.check_file_changes(team_repositories, team_list, args)
 
@@ -345,7 +345,7 @@ class Week_6(BaseController):
 
         return student_DGs, student_UGs, student_About_Us, student_Readme, student_java_code
 
-    def check_team_forks(self, repositories):
+    def check_team_forks(self, repositories, team_list):
         
         students_with_forks=[]
         for repo, students in repositories:
@@ -353,6 +353,25 @@ class Week_6(BaseController):
             students_with_forks+=forks_made
 
         students_with_forks = [student.lower() for student in students_with_forks]
+        
+        for team, students in team_list.items():
+            for student in students:
+                try:
+                    repository=student+"/main"
+                    repo = Github(self.cfg.get_api_key()).get_repo(repository)
+                    name = repo.full_name
+                    students_with_forks.append(student.lower())
+                except:
+                    try:
+                        repository=student+"/addressbook-level4"
+                        repo = Github(self.cfg.get_api_key()).get_repo(repository)
+                        name = repo.full_name
+                        students_with_forks.append(student.lower())
+                    except:
+                        continue
+                    
+        students_with_forks = list(set(students_with_forks))
+
         return students_with_forks
 
 
