@@ -106,7 +106,7 @@ class Week_6(BaseController):
 
         team_repositories, teams_with_repo, team_list=self.check_team_repo_setup(args)
         teams_with_PR=self.check_if_PR_sent(team_list, args)
-        student_with_forks=self.check_team_forks(team_repositories)
+        student_with_forks=self.check_team_forks(team_repositories, team_list)
         student_DGs, student_UGs, student_About_Us, \
             student_Readme, student_java_code = self.check_file_changes(team_repositories, team_list, args)
 
@@ -136,11 +136,12 @@ class Week_6(BaseController):
         for team, feedback in feedbacks.items():
 
             if team in no_team_repo_list:
-                student_feedback_messages, student_ta={}, {}
+                TA = tutor_map[team][1]
+                student_mails=[]
                 for student in teams_to_check[team]:
-                    student_feedback_messages[student]=no_team_repo[student]
-                    student_ta[student]=tutor_map[team][1]
-                self.mail_feedback(student_feedback_messages, student_details, student_ta)
+                    mail_message=no_team_repo[student]
+                    student_mails.append(student_details[student][0])
+                self.mail_feedback(mail_message, student_mails, TA)
             else:
                 print(team)
                 if PRODUCTION:
@@ -153,15 +154,16 @@ class Week_6(BaseController):
                 if result == False:
 
                     # Have to mail no_issue_tracker
-                    student_feedback_messages, student_ta={}, {}
+                    TA = tutor_map[team][1]
+                    student_mails=[]
                     for student in teams_to_check[team]:
-                        student_feedback_messages[student]=no_issue_tracker[student]
-                        student_ta[student]=tutor_map[team][1]
-                    self.mail_feedback(student_feedback_messages, student_details, student_ta)
+                        mail_message=no_issue_tracker[student]
+                        student_mails.append(student_details[student][0])
+                    self.mail_feedback(mail_message, student_mails, TA)
 
                 time.sleep(SLEEP_TIME)
 
-    def mail_feedback(self, student_feedback_messages, student_details, student_ta):
+    def mail_feedback(self, message, student_mails, TA_EMAIL):
 
         server_ssl = smtplib.SMTP_SSL('smtp.gmail.com', 465)
         server_ssl.ehlo()
@@ -169,26 +171,24 @@ class Week_6(BaseController):
 
         mail_subject=message_template["week{}".format(WEEK)]["mail_subject"]
 
-        for student, message in student_feedback_messages.items():
-            mail_message = '{}'.format(message)
+        mail_message = '{}'.format(message)
 
-            toaddr = [student_details[student][0] if PRODUCTION else TEST_EMAIL]
-            TA_EMAIL = student_ta[student]
+        if PRODUCTION:
+            toaddr = student_mails
+            cc_emails = [MODULE_EMAIL, TA_EMAIL]
+        else:
+            toaddr = [TEST_EMAIL]
+            cc_emails = []
 
-            if PRODUCTION:
-                cc_emails = [MODULE_EMAIL, TA_EMAIL]
-            else:
-                cc_emails = []
-            mail_message = "To: %s" % ', '.join(toaddr) + "\r\n" + \
-                           "CC: %s" % ', '.join(cc_emails) + "\r\n" + \
-                            mail_message
+        mail_message = "To: %s" % ', '.join(toaddr) + "\r\n" + \
+                       "CC: %s" % ', '.join(cc_emails) + "\r\n" + \
+                        mail_message
 
-            toaddr = toaddr + cc_emails
-            print(toaddr, mail_message)
+        toaddr = toaddr + cc_emails
+        print(toaddr,  student_mails, mail_message)
 
-            mail = server_ssl.sendmail(GMAIL_USER, toaddr, mail_message)
-
-            time.sleep(SLEEP_TIME)
+        mail = server_ssl.sendmail(GMAIL_USER, toaddr, mail_message)
+        time.sleep(SLEEP_TIME)
         server_ssl.close()
 
     def get_feedback_message(self, teams_to_check, tutor_map, audit_details, args):
@@ -264,9 +264,6 @@ class Week_6(BaseController):
                 final_message+=message["tutor"].format(DUMMY, COURSE, args.end_date)
             feedback_messages[team]=final_message
 
-            if team == "W12-1":
-                print(feedback_messages[team])
-        exit()
         return feedback_messages, no_team_repo, no_issue_tracker, no_team_repo_list
 
     def read_audit_details(self, args):
@@ -348,7 +345,7 @@ class Week_6(BaseController):
 
         return student_DGs, student_UGs, student_About_Us, student_Readme, student_java_code
 
-    def check_team_forks(self, repositories):
+    def check_team_forks(self, repositories, team_list):
         
         students_with_forks=[]
         for repo, students in repositories:
@@ -356,8 +353,25 @@ class Week_6(BaseController):
             students_with_forks+=forks_made
 
         students_with_forks = [student.lower() for student in students_with_forks]
-        # print(student_with_forks)
-        # exit()
+        
+        for team, students in team_list.items():
+            for student in students:
+                try:
+                    repository=student+"/main"
+                    repo = Github(self.cfg.get_api_key()).get_repo(repository)
+                    name = repo.full_name
+                    students_with_forks.append(student.lower())
+                except:
+                    try:
+                        repository=student+"/addressbook-level4"
+                        repo = Github(self.cfg.get_api_key()).get_repo(repository)
+                        name = repo.full_name
+                        students_with_forks.append(student.lower())
+                    except:
+                        continue
+                    
+        students_with_forks = list(set(students_with_forks))
+
         return students_with_forks
 
 
