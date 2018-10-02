@@ -21,14 +21,14 @@ TEST_EMAIL_2 = "devamanyu@gmail.com"
 LECTURER_EMAIL = "anarayan@comp.nus.edu.sg"
 HEAD_TA_EMAIL = "slewyh@comp.nus.edu.sg"
 
-STERNER_MAIL = True
+STERNER_MAIL = False
 PRODUCTION = True
 #############################################################
 
 
 REPO_PREFIX = "addressbook-level"
 ACCEPTED_LABELS = ["reviewed", "kudos!!", "accepted w/ minimal review"]
-CSV_HEADER = ["TA", "Pending"]
+CSV_HEADER = ["TA", "Pending", "Created_at", "Days_before"]
 OUTPUT_DIR = "./output/"
 LEVELS = ["1", "2", "3", "4"]
 MESSAGE_TEMPLATE = "controllers/data/message_template.json"
@@ -124,15 +124,23 @@ class TADuties(BaseController):
         reminder_message={}
         for name, email, gid in list_of_TAs:
             index = ta_reviews.index[ta_reviews['TA']==gid][0]
-            pending_reviews = ast.literal_eval(ta_reviews["Pending"][index])
+            try:
+                pending_reviews = ast.literal_eval(ta_reviews["Pending"][index])
+                pending_reviews_days_before = ast.literal_eval(ta_reviews["Days_before"][index])
+            except:
+                continue
+
             number_of_pending_reviews = len(pending_reviews)
+            number_of_days_before = len(pending_reviews_days_before)
+            assert(number_of_pending_reviews == number_of_days_before)
 
             if number_of_pending_reviews>0:
 
                 review_list=""
-                for reviews in pending_reviews:
+                for reviews, days_before in zip(pending_reviews, pending_reviews_days_before):
                     review_list+="\n "
                     review_list+= str(reviews)
+                    review_list+= "   : created {} day(s) ago.".format(str(days_before))
 
                 if STERNER_MAIL:
                     reminder_message[gid]=message_template['ta-reminder']['mail_body_sterner'].format(name, review_list, COURSE)
@@ -149,8 +157,8 @@ class TADuties(BaseController):
         logging.debug('Tracking non-reviews PRs in Addressbook')
         logging.debug('CSV datafile: %s', args.csv)
         if parsers.common.are_files_readable(args.csv):
-            reviews_not_done, list_of_TAs = self.check_PR_reviews(args)
-            output_file=self.write_week_to_csv(reviews_not_done, list_of_TAs, args)
+            reviews_not_done, reviews_not_done_date, reviews_not_done_days, list_of_TAs = self.check_PR_reviews(args)
+            output_file=self.write_week_to_csv(reviews_not_done, reviews_not_done_date, reviews_not_done_days, list_of_TAs, args)
         else:
             sys.exit(1)
 
@@ -159,14 +167,18 @@ class TADuties(BaseController):
 
         list_of_TAs, reviews_not_done = self.extract_relevant_info(args.csv)
 
+        reviews_not_done_date = defaultdict(list)
+        reviews_not_done_days = defaultdict(list)
+
         for level in LEVELS:
             repository_name = REPO_PREFIX+str(level)
             repository = GitHubConnector(self.cfg.get_api_key(), ORGANIZATION+"/"+repository_name, ORGANIZATION).repo
-            reviews_not_done = self.get_PR_review_info(list_of_TAs, reviews_not_done, repository, args)
+            reviews_not_done, reviews_not_done_date, reviews_not_done_days = self.get_PR_review_info(list_of_TAs, reviews_not_done, \
+                    reviews_not_done_date, reviews_not_done_days, repository, args)
 
-        return reviews_not_done, list_of_TAs
+        return reviews_not_done, reviews_not_done_date, reviews_not_done_days, list_of_TAs
 
-    def get_PR_review_info(self, list_of_TAs, reviews_not_done, repository, args):
+    def get_PR_review_info(self, list_of_TAs, reviews_not_done, reviews_not_done_date, reviews_not_done_days, repository, args):
 
         TA_github_ids=[]
         for name, email, gid in list_of_TAs:
@@ -200,8 +212,10 @@ class TADuties(BaseController):
 
                     if not REVIEW_DONE:
                         reviews_not_done[ta.login].append(pull_request.html_url)
+                        reviews_not_done_date[ta.login].append(pull_request.created_at)
+                        reviews_not_done_days[ta.login].append((datetime.datetime.now()-pull_request.created_at).days)
 
-        return reviews_not_done
+        return reviews_not_done, reviews_not_done_date, reviews_not_done_days
 
     def extract_relevant_info(self, csv_file):
         user_list = parsers.csvparser.get_rows_as_list(csv_file)
@@ -211,7 +225,7 @@ class TADuties(BaseController):
 
         return list_of_TAs, reviews_not_done
 
-    def write_week_to_csv(self, reviews_not_done, list_of_TAs, args) :
+    def write_week_to_csv(self, reviews_not_done, reviews_not_done_date, reviews_not_done_days, list_of_TAs, args) :
 
         output_path = OUTPUT_DIR+"/week_{}/".format(args.week)
         output_file = output_path+"week_{}_pending_ta_reviews.csv".format(args.week)
@@ -227,6 +241,8 @@ class TADuties(BaseController):
             to_print.append(gid)
             if gid in reviews_not_done.keys():
                 to_print.append(reviews_not_done[gid])
+                to_print.append(reviews_not_done_date[gid])
+                to_print.append(reviews_not_done_days[gid])
             else:
                 to_print.append([])
             wr.writerow(to_print)
