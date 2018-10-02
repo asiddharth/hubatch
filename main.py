@@ -1,6 +1,4 @@
-from controllers import IssueController, OrganisationController, TeamProjectMergeStatusDetector
-from controllers import AddressbookPRDetector, CreateFeedback, Week_6, General, Week_3, TADuties
-from controllers import Week_5
+from controllers import Week_7, Week_6, Week_3, Week_5, TADuties
 from common.config import AppConfig
 from connectors.github import GitHubConnector
 from github import Github, GithubException
@@ -11,15 +9,16 @@ import argparse, logging, sys
 
 cfg = AppConfig()
 ghc = GitHubConnector(cfg.get_api_key(), cfg.get_repo(), cfg.get_organisation())
-issue_ctrl = IssueController(ghc)
-org_ctrl = OrganisationController(ghc)
-proj_detector = TeamProjectMergeStatusDetector(cfg)
-addressbook_ctrl = AddressbookPRDetector(cfg)
-create_feedback_ctrl = CreateFeedback(cfg)
+# issue_ctrl = IssueController(ghc)
+# org_ctrl = OrganisationController(ghc)
+# proj_detector = TeamProjectMergeStatusDetector(cfg)
+# addressbook_ctrl = AddressbookPRDetector(cfg)
+# create_feedback_ctrl = CreateFeedback(cfg)
 week_6_ctrl = Week_6(cfg)
 week_3_ctrl = Week_3(cfg)
 week_5_ctrl = Week_5(cfg)
-general_ctrl = General(cfg)
+week_7_ctrl = Week_7(cfg)
+# general_ctrl = General(cfg)
 track_ta = TADuties(cfg)
 
 def test():
@@ -76,15 +75,15 @@ def setup_argparse():
     parser = argparse.ArgumentParser(description='useful command line tools for GitHub')
     subparsers = parser.add_subparsers(dest='group', help='GitHub component in question')
     subparsers.required = True
-    issue_ctrl.setup_argparse(subparsers)
-    org_ctrl.setup_argparse(subparsers)
-    proj_detector.setup_argparse(subparsers)
-    addressbook_ctrl.setup_argparse(subparsers)
-    create_feedback_ctrl.setup_argparse(subparsers)
+    # issue_ctrl.setup_argparse(subparsers)
+    # org_ctrl.setup_argparse(subparsers)
+    # proj_detector.setup_argparse(subparsers)
+    # addressbook_ctrl.setup_argparse(subparsers)
+    # create_feedback_ctrl.setup_argparse(subparsers)
     week_6_ctrl.setup_argparse(subparsers)
     week_3_ctrl.setup_argparse(subparsers)
     week_5_ctrl.setup_argparse(subparsers)
-    general_ctrl.setup_argparse(subparsers)
+    week_7_ctrl.setup_argparse(subparsers)
     track_ta.setup_argparse(subparsers)
 
     return parser
