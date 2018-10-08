@@ -21,6 +21,7 @@ from urllib.request import urlopen, URLError, HTTPError
 
 import logging, time
 import base64
+from travispy import TravisPy
 
 #############################################################
 COURSE = "CS2113"
@@ -570,6 +571,20 @@ class Week_8(BaseController):
             if not_modify_string in contents:
                 return
         teams_AB4_modified.append(team)
+
+    def check_travis_build_passing(self, teams_to_check):
+        t = TravisPy.github_auth(self.cfg.get_api_key())
+        teams_build_passing = []
+        for team, students in teams_to_check.items() :
+            repository_name = TEAM_REPO_PREFIX + str(team) + "/main"
+            try :
+                repository = t.repo(repository_name)
+            except :
+                continue
+            if repository.last_build_state == 'passed' :
+                teams_build_passing.append(team)
+        return  teams_build_passing
+
 
 
     def check_jar_releaseTag_existence(self, teams_to_check, start_datetime, end_datetime):
