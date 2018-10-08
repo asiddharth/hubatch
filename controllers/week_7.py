@@ -22,21 +22,21 @@ from urllib.request import urlopen, URLError, HTTPError
 import logging, time
 
 #############################################################
-COURSE = "CS2113"
-TEAM_REPO_PREFIX = "CS2113-AY1819S1-"
-GMAIL_USER = 'cs2113.bot@gmail.com'  
-GMAIL_PASSWORD = 'cs2113.bot.feedback'
-MODULE_EMAIL = "cs2113@comp.nus.edu.sg"
+COURSE = "CS2103"
+TEAM_REPO_PREFIX = "CS2103-AY1819S1-"
+GMAIL_USER = 'cs2103.bot@gmail.com'
+GMAIL_PASSWORD = 'cs2103.bot.feedback'
+MODULE_EMAIL = "cs2103@comp.nus.edu.sg"
 
 
-TEST_EMAIL = "hdevamanyu@student.nitw.ac.in"
+TEST_EMAIL = "siddarth15@cse.iitb.ac.in"
 
-ADDRESSBOOK_REPO = ["nusCS2113-AY1819S1/addressbook-level4", "nusCS2113-AY1819S1/addressbook-level3"]
-AB3="https://github.com/nusCS2113-AY1819S1/addressbook-level3"
-AB4="https://github.com/nusCS2113-AY1819S1/addressbook-level4"
+ADDRESSBOOK_REPO = ["nus-cs2103-AY1819S1/addressbook-level4"]
+
+AB4="https://github.com/nus-cs2103-AY1819S1/addressbook-level4"
 LINK1 = "https://github.com/{}{}/main"
-LINK2 = "https://nuscs2113-ay1819s1.github.io/website/admin/project-w07-v11.html"
-PRODUCTION = False
+LINK2 = "https://nus-cs2103-ay1819s1.github.io/cs2103-website/admin/project-w07-v11.html"
+PRODUCTION = True
 ##############################################################
 
 
@@ -113,7 +113,7 @@ class Week_7(BaseController):
         logging.debug('CSV datafile: %s', args.csv)
 
         start_datetime=datetime.datetime.strptime(args.start_date, '%d/%m/%Y')
-        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+timedelta(days=1, hours=2) # 2-am checking
+        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+timedelta(days=1) # 2-am checking
 
 
         team_repositories, teams_with_repo, team_list=self.check_team_repo_setup(args)
@@ -134,7 +134,7 @@ class Week_7(BaseController):
         Creates and posts feedback methods for each team and their students
         """
 
-        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+timedelta(days=1, hours=2) # 2-am checking
+        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+timedelta(days=1) # 2-am checking
 
 
         logging.debug('Reading audit from csv: %s', args.csv)
@@ -242,9 +242,9 @@ class Week_7(BaseController):
 
             # PR sent to upstream
             if int(audit_details["Team_PR"][team_index])>=1:
-                team_feedback+=[message["x_mark"], AB3, AB4, message["done"]]
+                team_feedback+=[message["x_mark"], AB4, message["done"]]
             else:
-                team_feedback+=[" ", AB3, AB4, message["not_done"]]
+                team_feedback+=[" ", AB4, message["not_done"]]
 
             # autopublish
             try:
@@ -325,10 +325,10 @@ class Week_7(BaseController):
                 else:
                     indiv_feedback+=[" ", message["not_done"]]
 
-                if (int(audit_details["Java"][indiv_index])>=1):
-                    indiv_feedback+=[message["x_mark"], message["done"]]
-                else:
-                    indiv_feedback+=[" ", message["not_done"]]
+                # if (int(audit_details["Java"][indiv_index])>=1):
+                #     indiv_feedback+=[message["x_mark"], message["done"]]
+                # else:
+                #     indiv_feedback+=[" ", message["not_done"]]
 
                 if (int(audit_details["Photo"][indiv_index])>=1):
                     indiv_feedback+=[message["x_mark"], student, message["done"]]

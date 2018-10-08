@@ -19,20 +19,19 @@ from collections import defaultdict
 import logging, time
 
 #############################################################
-COURSE = "CS2113"
-TEAM_REPO_PREFIX = "CS2113-AY1819S1-"
-GMAIL_USER = 'cs2113.bot@gmail.com'  
-GMAIL_PASSWORD = 'cs2113.bot.feedback'
-MODULE_EMAIL = "cs2113@comp.nus.edu.sg"
+COURSE = "CS2103"
+TEAM_REPO_PREFIX = "CS2103-AY1819S1-"
+GMAIL_USER = 'cs2103.bot@gmail.com'
+GMAIL_PASSWORD = 'cs2103.bot.feedback'
+MODULE_EMAIL = "cs2103@comp.nus.edu.sg"
 
-TEST_EMAIL = "hdevamanyu@student.nitw.ac.in"
+TEST_EMAIL = "siddarth15@cse.iitb.ac.in"
 
-ADDRESSBOOK_REPO = ["nusCS2113-AY1819S1/addressbook-level4", "nusCS2113-AY1819S1/addressbook-level3"]
-AB3="https://github.com/nusCS2113-AY1819S1/addressbook-level3"
-AB4="https://github.com/nusCS2113-AY1819S1/addressbook-level4"
+ADDRESSBOOK_REPO = ["nus-cs2103-AY1819S1/addressbook-level4"]
+AB4="https://github.com/nus-cs2103-AY1819S1/addressbook-level4"
 LINK1 = "https://github.com/{}{}/main"
-LINK2 = "https://nuscs2113-ay1819s1.github.io/website/admin/project-w06-mid-v11.html"
-PRODUCTION = False
+LINK2 = "https://nus-cs2103-ay1819s1.github.io/cs2103-website/admin/project-w06-mid-v11.html"
+PRODUCTION = True
 ##############################################################
 
 
@@ -218,9 +217,9 @@ class Week_6(BaseController):
 
             team_message=message["team"]
             if int(audit_details["Team_PR"][team_index])>=1:
-                team_message=team_message.format(LINK2, message["pr_created"].format(AB3, AB4), "\nNone")
+                team_message=team_message.format(LINK2, message["pr_created"].format(AB4), "\nNone")
             else:
-                team_message=team_message.format(LINK2, "", message["pr_not_created"].format(AB3, AB4))
+                team_message=team_message.format(LINK2, "", message["pr_not_created"].format(AB4))
 
             final_message+= team_message
 

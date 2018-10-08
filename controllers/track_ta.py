@@ -12,25 +12,27 @@ import logging, time, re, argparse
 from collections import defaultdict
 
 #############################################################
-COURSE = "CS2113"
-ORGANIZATION = "nusCS2113-AY1819S1"
-GMAIL_USER = 'cs2113.bot@gmail.com'  
-GMAIL_PASSWORD = 'cs2113.bot.feedback'
-TEST_EMAIL = "hdevamanyu@student.nitw.ac.in"
-TEST_EMAIL_2 = "devamanyu@gmail.com"
-LECTURER_EMAIL = "anarayan@comp.nus.edu.sg"
-HEAD_TA_EMAIL = "slewyh@comp.nus.edu.sg"
+COURSE = "CS2103"
+ORGANIZATION = "nus-cs2103-AY1819S1"
+GMAIL_USER = 'cs2103.bot@gmail.com'
+GMAIL_PASSWORD = 'cs2103.bot.feedback'
+TEST_EMAIL = "siddarth15@cse.iitb.ac.in"
+TEST_EMAIL_2 = "1001CS01@iitp.ac.in"
+LECTURER_EMAIL = "damith@comp.nus.edu.sg"
+HEAD_TA_EMAIL = "parvathy@comp.nus.edu.sg"
 
-STERNER_MAIL = False
+STERNER_MAIL = True
 PRODUCTION = True
 #############################################################
 
 
 REPO_PREFIX = "addressbook-level"
-ACCEPTED_LABELS = ["reviewed", "kudos!!", "accepted w/ minimal review"]
+#ACCEPTED_LABELS = ["reviewed", "kudos!!", "accepted w/ minimal review"]
+ACCEPTED_LABELS = ["v1.1-reviewed"]
 CSV_HEADER = ["TA", "Pending", "Created_at", "Days_before"]
 OUTPUT_DIR = "./output/"
-LEVELS = ["1", "2", "3", "4"]
+#LEVELS = ["1", "2", "3", "4"]
+LEVELS = ["4"]
 MESSAGE_TEMPLATE = "controllers/data/message_template.json"
 SLEEP_TIME = 3
 
@@ -185,14 +187,17 @@ class TADuties(BaseController):
             TA_github_ids.append(gid)
 
         for pull_request in repository.get_pulls(state="all", sort="updated", direction="desc"):
-            print(pull_request.title)
 
             try:
-                if (not pull_request.title[:2].lower() == '[w') or (int(pull_request.title[2]) > int(args.week)):
+                # if (not pull_request.title[:2].lower() == '[w') or (int(pull_request.title[2]) > int(args.week)):
+                #     continue
+                if (not pull_request.title[:1].lower() == '[') :
                     continue
             except:
                 continue
-
+            if pull_request.state == "closed" :
+                continue
+            print(pull_request.title)
             
             for ta in pull_request.assignees:
                 if ta.login.lower() in TA_github_ids:
@@ -200,12 +205,14 @@ class TADuties(BaseController):
                     for label in pull_request.labels:
                         if label.name.lower() in ACCEPTED_LABELS:
                             REVIEW_DONE = True
-                    
-                    if not REVIEW_DONE:
-                        for comment in pull_request.get_reviews():
-                            if comment.user.login == ta.login.lower():
-                                REVIEW_DONE = True
-                                break
+
+                    #TODO : Include for weekly PRs
+                    #
+                    # if not REVIEW_DONE:
+                    #     for comment in pull_request.get_reviews():
+                    #         if comment.user.login == ta.login.lower():
+                    #             REVIEW_DONE = True
+                    #             break
 
                     if pull_request.state == "closed" :
                         REVIEW_DONE = True
