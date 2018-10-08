@@ -20,6 +20,7 @@ import socket
 from urllib.request import urlopen, URLError, HTTPError
 
 import logging, time
+import base64
 
 #############################################################
 COURSE = "CS2113"
@@ -59,6 +60,9 @@ CSV_HEADER = ["Student", "Team", "Team_Repo", "Team_PR", "Auto_Publish", "UI_PNG
 DUMMY = "dummy"
 WEEK = 8
 SLEEP_TIME = 3
+AB4_README_UNMODIFIED_STRINGS = ["This is a desktop Address Book application.", "= Address Book (Level 4)", "What's different from https://github.com/se-edu/addressbook-level3[level 3]:"]
+AB4_ACKNOWLEDGED_STRINGS = ["address", "book"]
+ACKNOWLEDGE_STRING = "== Acknowledgements"
 
 with open(MESSAGE_TEMPLATE, 'r') as f:
     message_template=json.load(f)
@@ -534,6 +538,38 @@ class Week_8(BaseController):
         return teams_with_repo, teams_without_repo, repo_objects
 
     def check_milestones(self, local_milestones):
+        return
+
+    def check_readme_modified_AB4_acknowledged (self, teams_to_check):
+        teams_AB4_modified =[]
+        teams_AB4_acknowledged = []
+
+        for team, students in teams_to_check.items():
+            if team in self.team_repo_mapping.keys():
+                repository = self.team_repo_mapping[team]
+                print(repository.url)
+                file = repository.get_readme(ref="master")
+                if file.encoding == "base64" :
+                    contents = base64.b64decode(file.content).decode("utf-8")
+                    self.add_team_to_list_if_readme_modified(contents, team, teams_AB4_modified)
+                    self.add_team_to_list_if_ab4_acknowledged(contents, team, teams_AB4_acknowledged)
+
+        return teams_AB4_modified, teams_AB4_acknowledged
+
+    def add_team_to_list_if_ab4_acknowledged(self, contents, team, teams_AB4_acknowledged):
+        y = contents.split(ACKNOWLEDGE_STRING)
+        if len(y) < 2 :
+            return
+        for acknowledged_string in AB4_ACKNOWLEDGED_STRINGS :
+            if acknowledged_string not in y[1].lower() :
+                return
+        teams_AB4_acknowledged.append(team)
+
+    def add_team_to_list_if_readme_modified(self, contents, team, teams_AB4_modified):
+        for not_modify_string in AB4_README_UNMODIFIED_STRINGS:
+            if not_modify_string in contents:
+                return
+        teams_AB4_modified.append(team)
 
 
     def check_jar_releaseTag_existence(self, teams_to_check, start_datetime, end_datetime):
