@@ -15,9 +15,11 @@ import csv
 import re
 import json
 import math
+import ast
 from collections import defaultdict
 import socket
 import base64
+from dateutil import parser
 from urllib.request import urlopen, URLError, HTTPError
 from travispy import TravisPy
 
@@ -39,7 +41,7 @@ AB4="https://github.com/nusCS2113-AY1819S1/addressbook-level4"
 LINK1 = "https://github.com/{}{}/main"
 LINK2 = "https://nuscs2113-ay1819s1.github.io/website/admin/project-w08-mid-v12.html"
 TIMEDELTA = timedelta(days=1, hours=2) # 2-am checking # Set  timedelta(days=1) for CS2103
-PRODUCTION = False
+PRODUCTION = True
 ##############################################################
 
 TYPE = "type."
@@ -51,10 +53,10 @@ PNG=".png"
 JPG=".jpg"
 JPEG="jpeg"
 UI_PNG_SUBSTRINGS = ["ui", ".png"]
-DEVELOPER_GUIDE = "DeveloperGuide.adoc"
-USER_GUIDE = "UserGuide.adoc"
-README = "README.adoc"
-ABOUT_US = "AboutUs.adoc"
+DEVELOPER_GUIDE = "developerguide.adoc"
+USER_GUIDE = "userguide.adoc"
+README = "readme.adoc"
+ABOUT_US = "aboutus.adoc"
 JAVA = ".java"
 FXML = ".fxml"
 MESSAGE_TEMPLATE = "controllers/data/message_template.json"
@@ -140,7 +142,6 @@ class Week_8(BaseController):
 
         end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+TIMEDELTA
 
-
         logging.debug('Reading audit from csv: %s', args.csv)
         audit_details = self.read_audit_details(args)
         teams_to_check, student_details=self.extract_team_info(args.csv, args.day)
@@ -216,10 +217,6 @@ class Week_8(BaseController):
 
         message = message_template["week{}".format(WEEK)]
 
-
-        
-        message["indiv"]
-
         feedback_messages={}
         no_issue_tracker={}
         no_team_repo={}
@@ -234,75 +231,143 @@ class Week_8(BaseController):
             # Creating team feedback message
             team_feedback=[]
             team_index=audit_details.index[audit_details['Team']==team][0]
-
             no_team_repo[team]=message["no_team_repo"].format(team, LINK1.format(TEAM_REPO_PREFIX,team), LINK2, COURSE, end_datetime)
+
+
+
+
+            ############################################################################################################################################
+            # Leftovers first
+            LEFTOVER=False # no leftover assumed
+
+            leftover_team_feedback = []
+            leftover_team_message = ""
+
+            # Auto_publish
+            try:
+                if len(audit_details["Auto_Publish"][team_index])>0:
+                    leftover_team_feedback+=[message["x_mark"], message["link"].format(audit_details["Auto_Publish"][team_index]), message["done"]]
+                else:
+                    exit()
+            except:
+                leftover_team_feedback+=[" ", "None", message["not_done"]]
+                LEFTOVER=True
+
+            # README Modify
+            if int(audit_details["README_modified"][team_index]) == 0:
+                leftover_team_feedback+=[" ", message["not_done"]]
+                LEFTOVER=True
+            else:
+                leftover_team_feedback+=[message["x_mark"], message["done"]]
+
+            # README Ack
+            if int(audit_details["README_ack"][team_index]) == 0:
+                leftover_team_feedback+=[" ", message["not_done"]]
+                LEFTOVER=True
+            else:
+                leftover_team_feedback+=[message["x_mark"], message["done"]]
+
+            # UI Png
+            if int(audit_details["UI_PNG"][team_index]) == 0:
+                leftover_team_feedback+=[" ", message["not_done"]]
+                LEFTOVER=True
+            else:
+                leftover_team_feedback+=[message["x_mark"], message["done"]]
+
+            if LEFTOVER:
+                leftover_team_message = message["leftover_team"].format(*leftover_team_feedback)
+            else:
+                leftover_team_message=""
+            ############################################################################################################################################
+
+
+            team_feedback+=[leftover_team_message]
 
             # Team Repo created
             if int(audit_details["Team_Repo"][team_index]) == 0:
-                team_feedback+=[" ", message["not_done"]]
                 no_team_repo_list.append(team)
+
+            # Issue Labels created
+            if int(audit_details["Issue_Labels"][team_index]) == 0:
+                team_feedback+=[" ", message["not_done"]]
             else:
                 team_feedback+=[message["x_mark"], message["done"]]
 
-            # PR sent to upstream
-            if int(audit_details["Team_PR"][team_index])>=1:
-                team_feedback+=[message["x_mark"], AB3, AB4, message["done"]]
+            # Milestones created
+            milestones_by_team = ast.literal_eval(audit_details["Milestones"][team_index])
+            if len(milestones_by_team)==3:
+                team_feedback+=[message["x_mark"], " ".join(milestones_by_team), message["done"]]
             else:
-                team_feedback+=[" ", AB3, AB4, message["not_done"]]
+                team_feedback+=[" ", " ".join(milestones_by_team), message["not_done"]]
 
-            # autopublish
+            # Story issues
             try:
-                if len(audit_details["Auto_Publish"][team_index])>=1:
+                if len(audit_details["story_issues"][team_index])>0:
+                    team_feedback+=[message["x_mark"], message["link"].format(audit_details["story_issues"][team_index]), message["done"]]
+                else:
+                    exit()
+            except:
+                team_feedback+=[" ", "", message["not_done"]]
+
+            # Priority issues
+            try:
+                if len(audit_details["priority_issues"][team_index])>0:
+                    team_feedback+=[message["x_mark"], message["link"].format(audit_details["priority_issues"][team_index]), message["done"]]
+                else:
+                    exit()
+            except:
+                team_feedback+=[" ", "", message["not_done"]]
+
+
+            # Check deadline
+            try:
+                dt = parser.parse(audit_details["v1.2_deadline"][team_index])
+                deadline = end_datetime+timedelta(days=7)
+                if dt <= deadline:
                     team_feedback+=[message["x_mark"], message["done"]]
+                else:
+                    exit()
             except:
                 team_feedback+=[" ", message["not_done"]]
 
-            # UI.png
-            if int(audit_details["UI_PNG"][team_index]) == 0:
+            # Issues allocated to v1.2
+            try:
+                if len(audit_details["issue_allocated_v1.2"][team_index])>0:
+                    team_feedback+=[message["x_mark"], message["link"].format(audit_details["issue_allocated_v1.2"][team_index]), message["done"]]
+                else:
+                    exit()
+            except:
+                team_feedback+=[" ", "", message["not_done"]]
+
+
+            # Issues allocated to v1.3
+            try:
+                if len(audit_details["issue_allocated_v1.3"][team_index])>0:
+                    team_feedback+=[message["x_mark"], message["link"].format(audit_details["issue_allocated_v1.3"][team_index]), message["done"]]
+                else:
+                    exit()
+            except:
+                team_feedback+=[" ", "", message["not_done"]]
+
+            # Build passing
+            if int(audit_details["Travis"][team_index]) == 0:
                 team_feedback+=[" ", message["not_done"]]
             else:
                 team_feedback+=[message["x_mark"], message["done"]]
 
 
-            # UG, DG
-            user_guide_done, dev_guide_done = False, False
-            for student in students:
-                indiv_index=audit_details.index[audit_details['Student']==student][0]
-                if int(audit_details['UG'][indiv_index]) >= 1:
-                    user_guide_done=True
-                if int(audit_details['DG'][indiv_index]) >= 1:
-                    dev_guide_done=True
-
-            if user_guide_done:
-                team_feedback+=[message["x_mark"], message["done"]]
-            else:
-                team_feedback+=[" ", message["not_done"]]
-
-            if dev_guide_done:
-                team_feedback+=[message["x_mark"], message["done"]]
-            else:
-                team_feedback+=[" ", message["not_done"]]
-
-            if int(audit_details["Git tag"][team_index]) == 0:
-                team_feedback+=[" ", message["not_done"]]
-            else:
-                team_feedback+=[message["x_mark"], message["done"]]
-
-
-            final_message+=message["team"].format(*team_feedback)
-
-
+            final_message += message["team"].format(* team_feedback)
 
 
             # Issue tracker not enabled message for all students
             no_issue_tracker[team]=message["no_issue_tracker"].format(team, LINK1.format(TEAM_REPO_PREFIX,team), LINK2, COURSE, end_datetime)
 
 
-
             # Creating individual feedback messageer
 
             for student in students:
                 indiv_message=message["indiv"]
+                
                 if PRODUCTION:
                     indiv_feedback=[student]
                 else:
@@ -310,42 +375,69 @@ class Week_8(BaseController):
 
                 indiv_index=audit_details.index[audit_details['Student']==student][0]
 
-                if (int(audit_details["DG"][indiv_index])>=1) or (int(audit_details["UG"][indiv_index])>=1) or \
-                        (int(audit_details["AboutUs"][indiv_index])>=1) or (int(audit_details["README"][indiv_index])>=1) or \
-                        (int(audit_details["Java"][indiv_index])>=1):
-                    indiv_feedback+=[message["x_mark"], message["done"]]
-                else:
-                    indiv_feedback+=[" ", message["not_done"]]
 
-                if int(audit_details["Peer_Review"][indiv_index])==0:
-                    indiv_feedback+=[" ", message["not_done"]]
+                # Leftover indiv
+                LEFTOVER=False
+                leftover_indiv_feedback = []
+                leftover_indiv_message = ""
+
+                # forks
+                if int(audit_details["Fork"][indiv_index]) == 0:
+                    leftover_indiv_feedback+=[" ", message["not_done"]]
+                    LEFTOVER=True
                 else:
-                    indiv_feedback+=[message["x_mark"], message["done"]]
+                    leftover_indiv_feedback+=[message["x_mark"], message["done"]]
+
+                
+                try:
+                    if len(audit_details["Student_PR"][indiv_index])>0:
+                        leftover_indiv_feedback+=[message["x_mark"], message["link"].format(audit_details["Student_PR"][indiv_index]), message["done"]]
+                    else:
+                        exit()
+                except:
+                    leftover_indiv_feedback+=[" ", "", message["not_done"]]
+                    LEFTOVER=True
+
+                
+                if int(audit_details["Peer_Review"][indiv_index]) == 0:
+                    leftover_indiv_feedback+=[" ", message["not_done"]]
+                    LEFTOVER=True
+                else:
+                    leftover_indiv_feedback+=[message["x_mark"], message["done"]]
 
 
-                if (int(audit_details["DG"][indiv_index])>=1) or (int(audit_details["UG"][indiv_index])>=1) or \
-                        (int(audit_details["AboutUs"][indiv_index])>=1) or (int(audit_details["README"][indiv_index])>=1):
-                    indiv_feedback+=[message["x_mark"], message["done"]]
+
+
+                if LEFTOVER:
+                    leftover_indiv_message = message["leftover_indiv"].format(*leftover_indiv_feedback)
                 else:
-                    indiv_feedback+=[" ", message["not_done"]]
+                    leftover_indiv_message=""
+                    
+
+                indiv_feedback.append(leftover_indiv_message)
+
+                # Current
 
                 if (int(audit_details["Java"][indiv_index])>=1):
                     indiv_feedback+=[message["x_mark"], message["done"]]
                 else:
                     indiv_feedback+=[" ", message["not_done"]]
 
-                if (int(audit_details["Photo"][indiv_index])>=1):
-                    indiv_feedback+=[message["x_mark"], student, message["done"]]
+                if int(audit_details["v1.2_issue_assigned"][indiv_index])==0:
+                    indiv_feedback+=[" ", message["not_done"]]
                 else:
-                    indiv_feedback+=[" ", student, message["not_done"]]
+                    indiv_feedback+=[message["x_mark"], message["done"]]
+
 
                 final_message+= message["indiv"].format(*indiv_feedback)
+
             
             if PRODUCTION:
                 final_message+=message["tutor"].format(tutor_map[team][0], COURSE, end_datetime)
             else:
                 final_message+=message["tutor"].format(DUMMY, COURSE, end_datetime)
             feedback_messages[team]=final_message
+
         return feedback_messages, no_team_repo, no_issue_tracker, no_team_repo_list
 
     def read_audit_details(self, args):
@@ -382,13 +474,14 @@ class Week_8(BaseController):
 
 
         team_repositories, teams_with_repo, team_list=self.check_team_repo_setup(args)
+        self.check_file_changes(team_repositories, team_list, args, start_datetime, end_datetime)
         self.check_if_PR_sent(team_list, args, start_datetime, end_datetime)
         self.check_readme_modified_AB4_acknowledged(team_list)
         self.check_travis_build_passing(team_list)
         self.check_team_level_things(team_list, start_datetime, end_datetime)
         self.check_autopublishing(team_list, args)
         self.check_team_forks(team_repositories)
-        self.check_file_changes(team_repositories, team_list, args, start_datetime, end_datetime)
+        
 
         output_file=self.write_week_to_csv(team_list, teams_with_repo, args.day)
 
@@ -677,7 +770,6 @@ class Week_8(BaseController):
             os.makedirs(output_path)
         wr = csv.writer(open(output_file, 'w'), delimiter=',', quoting=csv.QUOTE_ALL)
         wr.writerow(CSV_HEADER)
-
 
         for team, students in team_list.items():
             for student in students:

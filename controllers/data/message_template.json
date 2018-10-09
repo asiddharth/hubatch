@@ -1,11 +1,27 @@
 {	
+	"week8":{
+		"mail_subject": "{}: Feedback for Week {}",
+		"done":":heavy_check_mark: well done!",
+		"not_done":":exclamation: try to do by next milestone",
+		"x_mark":"x",
+		"link":"[link]({})",
+		"subject":"Subject: feedback on week 8 project progress\n\nSee [v1.1 progress guide]({}) for more details of the activities mentioned below.\n***Mid-milestone progress reports are FYI only. They are not graded.***",
+		"leftover_indiv":"\n\n### Leftovers from v1.1\n\n* Used forking workflow:\n  - [{}]  Forked team repo ({})\n  - [{}]  Created PRs {} ({})\n  - [{}]  Gave review comments to other PRs ({})",
+		"indiv":"\n\n## Individual progress of @{} {}\n\n### Recommended progress for the upcoming milestone\n\n  - [{}]  Merged updates to java/fxml files ({})\n  - [{}]  Has issues/PRs assigned for the next milestone ({})\n",
+		"leftover_team":"\n\n### Leftovers from v1.1\n\n- [{}]  Auto-publishing set up for the team repo and the website is available at {} ({})\n* README page:\n  -  [{}]  Some parts not related to your product are removed ({})\n  -  [{}]  se-edu/addressbook-level[3/4] acknowledged ({})\n  -  [{}]  `Ui.png` has been updated ({})"  ,
+		"team":"\n\n## Team progress{}\n\n### Recommended progress for the upcoming milestone\n\n- [{}]  Issue labels set up e.g., `type.*`, `priority.*` ({})\n- [{}]  Milestones created: {} [Please ensure milestones are setup until 'v1.4'] ({})\n- [{}]  Issues marked as `type.Story` e.g., {} ({})\n- [{}]  Some issues prioritized using `priority.*` labels e.g., {} ({})\n*  Milestone v1.2 planned\n  -  [{}]  A suitable deadline set ({})\n  -  [{}]  Issues allocated to v1.2 e.g., {} ({})\n  -  [{}]  Issues allocated to v1.3 e.g., {} ({})\n- [{}]  Build passing ({})\n",
+		"tutor":"\n\nTutor: @{}\n\nNote: the above observation was done by the {}-feedback-bot and covers changes up to {} only. If you think the above observation is incorrect, please let us know by replying in this thread. Please include links to relevant PRs/comments in your response.",
+		"no_issue_tracker": "Subject: feedback on week 8 project progress\n\nDear team {}, \n\n We could not find issue-tracker enabled for your team repository:\n {} \n\n We encourage you to enable the issue-tracker and get started on the other team and individual activities as suggested by: \n {} \n\n Do ask for help from the tutor if you are facing any difficulties in the project. \n\n Note: the above observation was done by the {}-feedback-bot and covers changes up to {} only. If you think the above observation is incorrect, please let us know by replying to this email. Please include links to relevant PRs/comments in your response.",
+		"no_team_repo": "Subject: feedback on week 8 project progress\n\nDear team {}, \n\n We could not detect your team repo at the expected URL:\n {} \n\n We encourage you to set up the team repo (or correct the org/repo name in case you used different names) and get started on the other team and individual activities as suggested by: \n {} \n\n Do ask for help from the tutor if you are facing any difficulties in the project. \n\n Note: the above observation was done by the {}-feedback-bot and covers changes up to {} only. If you think the above observation is incorrect, please let us know by replying to this email. Please include links to relevant PRs/comments in your response."
+	},
+
 	"week7":{
 		"mail_subject": "{}: Feedback for Week {}",
 		"done":":heavy_check_mark: well done!",
 		"not_done":":exclamation: try to do by next milestone",
 		"x_mark":"x",
 		"subject":"Subject: feedback on week 7 project progress\n\nSee [v1.1 progress guide]({}) for more details of the activities mentioned below.",
-		"indiv":"\n\n## Individual progress of @{} \n\n* Used forking workflow:\n  - [{}]  Created PRs ({})\n  - [{}]  Reviewed PRs ({})\n- [{}]  Merged updates to documents ({})\n- [{}]  Merged changes to java/fxml ({})\n- [{}]  `{}.png` uploaded and linked from AboutUs page, merged ({})",
+		"indiv":"\n\n## Individual progress of @{} \n\n* Used forking workflow:\n  - [{}]  Created PRs ({})\n  - [{}]  Reviewed PRs ({})\n- [{}]  Merged updates to documents ({})\n- [{}]  Merged changes to java/fxml ({})\n- [{}]  `{}.png` uploaded and linked from AboutUs page in png format (change image to png if presently in different format) ({})",
 		"team":"\n\n## Team progress\n\n- [{}]  Team org and repo set up correctly ({})\n- [{}]  PR created from team repo to [AB-3]({}) or [AB-4]({}) ({})\n- [{}]  Auto-publishing set up for the team repo ({})\n* README page:\n  - [{}]  `Ui.png` has been updated ({})\n- [{}]  User Guide: some content has been updated ({})\n- [{}]  Developer Guide: some content has been updated ({})\n- [{}]  Team repo git tagged as `v1.1` ({})",
 		"tutor":"\n\nTutor: @{}\n\nNote: the above observation was done by the {}-feedback-bot and covers changes up to {} only. If you think the above observation is incorrect, please let us know by replying in this thread. Please include links to relevant PRs/comments in your response.",
 		"no_issue_tracker": "Subject: feedback on week 7 project progress\n\nDear team {}, \n\n We could not find issue-tracker enabled for your team repository:\n {} \n\n We encourage you to enable the issue-tracker and get started on the other team and individual activities as suggested by: \n {} \n\n Do ask for help from the tutor if you are facing any difficulties in the project. \n\n Note: the above observation was done by the {}-feedback-bot and covers changes up to {} only. If you think the above observation is incorrect, please let us know by replying to this email. Please include links to relevant PRs/comments in your response.",
