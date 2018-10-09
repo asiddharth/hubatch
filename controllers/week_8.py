@@ -17,11 +17,11 @@ import json
 import math
 from collections import defaultdict
 import socket
+import base64
 from urllib.request import urlopen, URLError, HTTPError
+from travispy import TravisPy
 
 import logging, time
-import base64
-from travispy import TravisPy
 
 #############################################################
 COURSE = "CS2113"
@@ -37,13 +37,15 @@ ADDRESSBOOK_REPO = ["nusCS2113-AY1819S1/addressbook-level4", "nusCS2113-AY1819S1
 AB3="https://github.com/nusCS2113-AY1819S1/addressbook-level3"
 AB4="https://github.com/nusCS2113-AY1819S1/addressbook-level4"
 LINK1 = "https://github.com/{}{}/main"
-LINK2 = "https://nuscs2113-ay1819s1.github.io/website/admin/project-w07-v11.html"
+LINK2 = "https://nuscs2113-ay1819s1.github.io/website/admin/project-w08-mid-v12.html"
+TIMEDELTA = timedelta(days=1, hours=2) # 2-am checking # Set  timedelta(days=1) for CS2103
 PRODUCTION = False
 ##############################################################
 
 TYPE = "type."
 PRIORITY = "priority."
-MILESTONES = ['v1.2', 'v1.3', 'v1.4']
+MILESTONES = ['v1.2', 'v1.3', 'v1.4'] # First item should be the next upcoming 
+STORY = "story"
 TAG="v1.2"
 PNG=".png"
 JPG=".jpg"
@@ -57,13 +59,17 @@ JAVA = ".java"
 FXML = ".fxml"
 MESSAGE_TEMPLATE = "controllers/data/message_template.json"
 OUTPUT_DIR = "./output/"
-CSV_HEADER = ["Student", "Team", "Team_Repo", "Team_PR", "Auto_Publish", "UI_PNG", "Git tag", "Fork", "DG", "UG", "AboutUs", "README", "Java", "Peer_Review", "Photo"]
+CSV_HEADER = ["Student", "Team", "Team_Repo", "Team_PR", "Auto_Publish", "Travis", "UI_PNG", "README_modified", "README_ack",\
+        "Issue_Labels", "Milestones", "story_issues", "priority_issues", "v1.2_deadline", "issue_allocated_v1.2", "issue_allocated_v1.3", \
+        "Fork", "Student_PR", "DG", "UG", "AboutUs", "README", "Java", "Peer_Review", "{}_issue_assigned".format(MILESTONES[0]), "Photo"]
+AB4_README_UNMODIFIED_STRINGS = ["This is a desktop Address Book application.", "= Address Book (Level 4)", \
+        "What's different from https://github.com/se-edu/addressbook-level3[level 3]:", "= AddressBook (Level 3)", \
+        "What's different from level 2"]
+AB4_ACKNOWLEDGED_STRINGS = ["address", "book"]
+ACKNOWLEDGE_STRING = "== Acknowledgements"
 DUMMY = "dummy"
 WEEK = 8
 SLEEP_TIME = 3
-AB4_README_UNMODIFIED_STRINGS = ["This is a desktop Address Book application.", "= Address Book (Level 4)", "What's different from https://github.com/se-edu/addressbook-level3[level 3]:"]
-AB4_ACKNOWLEDGED_STRINGS = ["address", "book"]
-ACKNOWLEDGE_STRING = "== Acknowledgements"
 
 with open(MESSAGE_TEMPLATE, 'r') as f:
     message_template=json.load(f)
@@ -115,33 +121,24 @@ class Week_8(BaseController):
         parser.set_defaults(func=self.create_feedback)
 
 
-    def audit_week(self, args):
-
-        logging.debug('CSV datafile: %s', args.csv)
-
-        start_datetime=datetime.datetime.strptime(args.start_date, '%d/%m/%Y')
-        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+timedelta(days=1, hours=2) # 2-am checking
 
 
-        team_repositories, teams_with_repo, team_list=self.check_team_repo_setup(args)
-        teams_with_tag=self.check_jar_releaseTag_existence(team_list, start_datetime, end_datetime)
-        teams_with_PR=self.check_if_PR_sent(team_list, args, start_datetime, end_datetime)
-        autopublished_teams=self.check_autopublishing(team_list, args)
-        student_with_forks=self.check_team_forks(team_repositories)
-        student_DGs, student_UGs, student_About_Us, \
-            student_Readme, student_java_code, ui_team, \
-            student_photo, peer_review_students = self.check_file_changes(team_repositories, team_list, args, start_datetime, end_datetime)
 
-        output_file=self.write_week_to_csv(team_list, teams_with_repo, teams_with_PR, student_with_forks, student_DGs, \
-                                 student_UGs, student_About_Us, student_Readme, student_java_code, ui_team, \
-                                 student_photo, peer_review_students, autopublished_teams, teams_with_tag, args.day)
+
+
+
+
+
+
+
+
 
     def create_feedback(self, args):
         """
         Creates and posts feedback methods for each team and their students
         """
 
-        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+timedelta(days=1, hours=2) # 2-am checking
+        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+TIMEDELTA
 
 
         logging.debug('Reading audit from csv: %s', args.csv)
@@ -358,10 +355,47 @@ class Week_8(BaseController):
         user_audit_details = parsers.csvparser.get_pandas_list(args.audit_csv)
         return user_audit_details
 
+    def load_tutor_map(self, csv_file):
+        data=parsers.csvparser.get_rows_as_list(csv_file)
+        tutor_map={}
+        for datum in data:
+            tutor_map[datum[0]]=(datum[1].strip(), datum[2].strip())
+        return tutor_map
+
+
+
+
+
+
+
+
+
+
+
+
+    def audit_week(self, args):
+
+        logging.debug('CSV datafile: %s', args.csv)
+
+        start_datetime=datetime.datetime.strptime(args.start_date, '%d/%m/%Y')
+        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+TIMEDELTA
+
+
+        team_repositories, teams_with_repo, team_list=self.check_team_repo_setup(args)
+        self.check_if_PR_sent(team_list, args, start_datetime, end_datetime)
+        self.check_readme_modified_AB4_acknowledged(team_list)
+        self.check_travis_build_passing(team_list)
+        self.check_team_level_things(team_list, start_datetime, end_datetime)
+        self.check_autopublishing(team_list, args)
+        self.check_team_forks(team_repositories)
+        self.check_file_changes(team_repositories, team_list, args, start_datetime, end_datetime)
+
+        output_file=self.write_week_to_csv(team_list, teams_with_repo, args.day)
+
 
     def check_if_PR_sent(self, team_list, args, start_datetime, end_datetime):
 
-        team_PR=[]
+        self.teams_with_PR=[]
         for repo in ADDRESSBOOK_REPO:
             repository =  Github(self.cfg.get_api_key()).get_repo(repo)
             for pull_request in repository.get_pulls(state="open", sort="updated", direction="desc"):
@@ -370,14 +404,13 @@ class Week_8(BaseController):
                         pull_request_login = pull_request.user.login.lower()
                         pull_request_title = pull_request.title[:7].lower()
                         title_prefix = re.search('\[{}..?-.\]'.format(args.day.lower()), pull_request_title).group()
-                        team_PR.append(title_prefix.lower()[1:-1])
+                        self.teams_with_PR.append(title_prefix.lower()[1:-1])
                 except:
                     continue
-        return team_PR
 
     def check_autopublishing(self, team_list, args):
         
-        autopublished_teams={}
+        self.autopublished_teams=defaultdict(lambda: "")
 
         for team, students in team_list.items():
             website_url="https://"+TEAM_REPO_PREFIX+str(team)+".github.io/main"
@@ -391,8 +424,7 @@ class Week_8(BaseController):
                 print('team: '+team+ 'We failed to reach a server. Reason:', str(e.reason))
             else :
                 html = response.read()
-                autopublished_teams[team]=website_url
-        return autopublished_teams
+                self.autopublished_teams[team]=website_url
 
     def check_file_changes(self, repositories, team_list, args, start_datetime, end_datetime):
         """
@@ -402,13 +434,13 @@ class Week_8(BaseController):
         :return student_* : dictionary(key=student, value=count of file changed)
         """
 
-        student_DGs,student_UGs=defaultdict(lambda: 0), defaultdict(lambda: 0)
-        student_About_Us, student_Readme=defaultdict(lambda: 0), defaultdict(lambda: 0)
-        student_java_code, student_PR=defaultdict(lambda: 0), defaultdict(lambda: 0)
-        student_photo=defaultdict(lambda: 0)
-        ui_team=defaultdict(lambda: 0)
+        self.student_DGs, self.student_UGs=defaultdict(lambda: 0), defaultdict(lambda: 0)
+        self.student_About_Us, self.student_Readme=defaultdict(lambda: 0), defaultdict(lambda: 0)
+        self.student_java_code, self.student_PR=defaultdict(lambda: 0), defaultdict(lambda: "")
+        self.student_photo=defaultdict(lambda: 0)
+        self.ui_team=defaultdict(lambda: 0)
 
-        peer_review_students=set()
+        self.peer_review_students=set()
 
         for team, students in team_list.items():
             repo = self.team_repo_mapping[team]
@@ -428,41 +460,41 @@ class Week_8(BaseController):
                         # Peer Review:
                         for comment in pull_request.get_issue_comments():
                             if (pull_request.user.login != comment.user.login): 
-                                peer_review_students.add(comment.user.login.lower())
+                                self.peer_review_students.add(comment.user.login.lower())
                         for comment in pull_request.get_comments():
                             if (pull_request.user.login != comment.user.login):
-                                peer_review_students.add(comment.user.login.lower())
+                                self.peer_review_students.add(comment.user.login.lower())
                         for comment in pull_request.get_review_comments():
                             if (pull_request.user.login != comment.user.login):
-                                peer_review_students.add(comment.user.login.lower())
+                                self.peer_review_students.add(comment.user.login.lower())
                         for comment in pull_request.get_reviews():
                             if (pull_request.user.login != comment.user.login):
-                                peer_review_students.add(comment.user.login.lower())
+                                self.peer_review_students.add(comment.user.login.lower())
 
 
                         for file in pull_request.get_files():
-                            filename = file.filename
+                            filename = file.filename.lower()
                             if int(file.changes)>0:
 
                                 if (pull_request_login is not None):
-                                    student_PR[pull_request_login]+=1
+                                    self.student_PR[pull_request_login]=pull_request.html_url
 
                                 if (pull_request.merged==True):
-                                    if (DEVELOPER_GUIDE in file.filename) and (pull_request_login is not None):
-                                        student_DGs[pull_request_login]+=1
-                                    elif (USER_GUIDE in file.filename) and (pull_request_login is not None):
-                                        student_UGs[pull_request_login]+=1
-                                    elif (ABOUT_US in file.filename) and (pull_request_login is not None):
-                                        student_About_Us[pull_request_login]+=1
-                                    elif (README in file.filename) and (pull_request_login is not None):
-                                        student_Readme[pull_request_login]+=1
-                                    elif ((JAVA in file.filename) or (FXML in file.filename)) and (pull_request_login is not None):
-                                        student_java_code[pull_request_login]+=1
+                                    if (DEVELOPER_GUIDE in filename) and (pull_request_login is not None):
+                                        self.student_DGs[pull_request_login]+=1
+                                    elif (USER_GUIDE in filename) and (pull_request_login is not None):
+                                        self.student_UGs[pull_request_login]+=1
+                                    elif (ABOUT_US in filename) and (pull_request_login is not None):
+                                        self.student_About_Us[pull_request_login]+=1
+                                    elif (README in filename) and (pull_request_login is not None):
+                                        self.student_Readme[pull_request_login]+=1
+                                    elif ((JAVA in filename) or (FXML in filename)) and (pull_request_login is not None):
+                                        self.student_java_code[pull_request_login]+=1
 
                             if (UI_PNG_SUBSTRINGS[0] in filename.lower()) and (UI_PNG_SUBSTRINGS[1] in filename.lower()):
-                                ui_team[team]+=1
+                                self.ui_team[team]+=1
                             elif (PNG in filename.lower()):
-                                student_photo[filename.rsplit(".",1)[0].split("/")[-1].lower().strip()]+=1
+                                self.student_photo[filename.rsplit(".",1)[0].split("/")[-1].lower().strip()]+=1
 
                 except:
                     continue
@@ -471,25 +503,21 @@ class Week_8(BaseController):
                 if commit.commit.author.date >= start_datetime:
                     for file in commit.files:
                         if (PNG in file.filename.lower()):
-                            student_photo[file.filename.rsplit(".",1)[0].split("/")[-1].lower().strip()]+=1
-
-        return student_DGs, student_UGs, student_About_Us, student_Readme, student_java_code, ui_team, student_photo, peer_review_students
+                            self.student_photo[file.filename.rsplit(".",1)[0].split("/")[-1].lower().strip()]+=1
 
     def check_team_forks(self, repositories):
         
-        students_with_forks=[]
+        self.student_with_forks=[]
         for repo, students in repositories:
-            forks_made=[fork.full_name.split("/")[0] for fork in repo.get_forks()]
-            students_with_forks+=forks_made
+            forks_made=[fork.full_name.split("/")[0].lower() for fork in repo.get_forks()]
+            self.student_with_forks+=forks_made
 
-        students_with_forks = [student.lower() for student in students_with_forks]
-        return students_with_forks
 
     def check_team_repo_setup(self, args):
 
         if parsers.common.are_files_readable(args.csv):
             teams_to_check, student_details=self.extract_team_info(args.csv, args.day)
-            teams_with_repo, teams_without_repo, repositories=self.check_repo_existence(teams_to_check)
+            teams_with_repo, repositories=self.check_repo_existence(teams_to_check)
             return repositories, teams_with_repo, teams_to_check
 
         else:
@@ -508,17 +536,13 @@ class Week_8(BaseController):
             student_details[user]=(email, name)
         return team_list, student_details
 
-    def load_tutor_map(self, csv_file):
-        data=parsers.csvparser.get_rows_as_list(csv_file)
-        tutor_map={}
-        for datum in data:
-            tutor_map[datum[0]]=(datum[1].strip(), datum[2].strip())
-        return tutor_map
+
+    
 
 
     def check_repo_existence(self, teams_to_check):
         
-        teams_with_repo, teams_without_repo={}, {}
+        teams_with_repo={}
         repo_objects = []
         self.team_repo_mapping={}
         for team, students in teams_to_check.items():
@@ -528,53 +552,112 @@ class Week_8(BaseController):
                 repository_name = repository.full_name
                 repo_objects.append((repository, students))
 
-                # Checking git tags
-
                 teams_with_repo[team]= students
                 self.team_repo_mapping[team]=repository
 
             except GithubException as e:
                 logging.error('Team repo for {} not found!'.format(team))
-                teams_without_repo[team]=students
-        return teams_with_repo, teams_without_repo, repo_objects
+        return teams_with_repo, repo_objects
+
 
     def check_milestones(self, local_milestones):
-        return
+        milestones_present=[]
+        for milestone in MILESTONES:
+            for team_milestone in local_milestones:
+                if milestone in team_milestone.lower():
+                    milestones_present.append(milestone)
+        return milestones_present
 
-    def check_readme_modified_AB4_acknowledged (self, teams_to_check):
-        teams_AB4_modified =[]
-        teams_AB4_acknowledged = []
+    def check_team_level_things(self, teams_to_check, start_datetime, end_datetime):
+
+        self.teams_with_issue_label=[]
+        self.team_milestones={}
+        self.team_issues_marked_story, self.team_issues_marked_priority=defaultdict(lambda: ""), defaultdict(lambda: "")
+        self.team_milestone_due_date=defaultdict(lambda: "")
+        self.team_issue_assigned_to_milestone=defaultdict(lambda: "")
+        self.team_issue_assigned_to_milestone_1_3=defaultdict(lambda: "")
+        self.student_issue_assigned_to_milestone=defaultdict(lambda: 0)
+
 
         for team, students in teams_to_check.items():
             if team in self.team_repo_mapping.keys():
                 repository = self.team_repo_mapping[team]
-                print(repository.url)
+
+                
+                repository_labels = repository.get_labels()
+                repository_milestones = repository.get_milestones(state='all')
+
+                # Note labels for the repository
+                for label in repository_labels:
+                    if (TYPE in label.name.lower()) and (PRIORITY in label.name.lower()):
+                        self.teams_with_issue_label.append(team)
+
+                # Note milestones for the repository
+                local_milestones=[]
+                local_due_date={}
+                for milestone in repository_milestones:
+                    local_milestones.append(milestone.title.lower())
+                    local_due_date[milestone.title.lower()]=milestone.due_on
+                milestones_present = self.check_milestones(local_milestones)
+                self.team_milestones[team] = milestones_present
+
+                # Issues marked as type.Story and priority.
+                for issue in repository.get_issues(state="all"):
+
+                    # check issue assigned to v1.2
+                    if (issue.milestone is not None) and (MILESTONES[0] in issue.milestone.title.lower()):
+                        self.team_issue_assigned_to_milestone[team] = issue.html_url
+
+                        #For such issue, save the assignee
+                        for assignee in issue.assignees:
+                            self.student_issue_assigned_to_milestone[assignee.login.lower()]+=1
+
+                    # check issue assigned to v1.3
+                    if (issue.milestone is not None) and (MILESTONES[1] in issue.milestone.title.lower()):
+                        self.team_issue_assigned_to_milestone_1_3[team] = issue.html_url
+
+                    for label in issue.labels:
+                        if STORY in label.name.lower():
+                            self.team_issues_marked_story[team]=issue.html_url
+                        elif PRIORITY in label.name.lower():
+                            self.team_issues_marked_priority[team]=issue.html_url
+
+                # Milestone v1.2 specific
+                for milestone, due_date in local_due_date.items():
+                    if MILESTONES[0] in milestone.lower():
+                        self.team_milestone_due_date[team]=due_date
+
+
+    def check_readme_modified_AB4_acknowledged (self, teams_to_check):
+        self.README_modified =[]
+        self.README_ack = []
+        for team, students in teams_to_check.items():
+            if team in self.team_repo_mapping.keys():
+                repository = self.team_repo_mapping[team]
                 file = repository.get_readme(ref="master")
                 if file.encoding == "base64" :
                     contents = base64.b64decode(file.content).decode("utf-8")
-                    self.add_team_to_list_if_readme_modified(contents, team, teams_AB4_modified)
-                    self.add_team_to_list_if_ab4_acknowledged(contents, team, teams_AB4_acknowledged)
-
-        return teams_AB4_modified, teams_AB4_acknowledged
-
-    def add_team_to_list_if_ab4_acknowledged(self, contents, team, teams_AB4_acknowledged):
+                    self.add_team_to_list_if_readme_modified(contents, team)
+                    self.add_team_to_list_if_ab4_acknowledged(contents, team)
+    
+    def add_team_to_list_if_ab4_acknowledged(self, contents, team):
         y = contents.split(ACKNOWLEDGE_STRING)
         if len(y) < 2 :
             return
         for acknowledged_string in AB4_ACKNOWLEDGED_STRINGS :
             if acknowledged_string not in y[1].lower() :
                 return
-        teams_AB4_acknowledged.append(team)
+        self.README_ack.append(team)
 
-    def add_team_to_list_if_readme_modified(self, contents, team, teams_AB4_modified):
+    def add_team_to_list_if_readme_modified(self, contents, team):
         for not_modify_string in AB4_README_UNMODIFIED_STRINGS:
             if not_modify_string in contents:
                 return
-        teams_AB4_modified.append(team)
+        self.README_modified.append(team)
 
     def check_travis_build_passing(self, teams_to_check):
         t = TravisPy.github_auth(self.cfg.get_api_key())
-        teams_build_passing = []
+        self.teams_build_passing = []
         for team, students in teams_to_check.items() :
             repository_name = TEAM_REPO_PREFIX + str(team) + "/main"
             try :
@@ -582,99 +665,49 @@ class Week_8(BaseController):
             except :
                 continue
             if repository.last_build_state == 'passed' :
-                teams_build_passing.append(team)
-        return  teams_build_passing
+                self.teams_build_passing.append(team)
 
 
-
-    def check_jar_releaseTag_existence(self, teams_to_check, start_datetime, end_datetime):
-        # teams_with_release, teams_without_release, teams_with_jar, teams_without_jar = {}, {}, {}, {}
-        teams_with_tag=[]
-        teams_with_issue_label=[]
-        teams_with_milestones=[]
-        for team, students in teams_to_check.items():
-            if team in self.team_repo_mapping.keys():
-                repository = self.team_repo_mapping[team]
-
-                
-                repository_labels = repository.get_labels()
-                repository_milestones = repository.get_milestones()
-
-                # Note labels for the repository
-                for label in repository_labels:
-                    if (TYPE in label.name.lower()) and (PRIORITY in label.name.lower()):
-                        teams_with_issue_label.append(team)
-
-                # Note milestones for the repository
-                local_milestones=[]
-                for milestone in repository_milestones:
-                    local_milestones.append(milestone.title.lower())
-                
-                if (self.check_milestones(local_milestones)):
-                    teams_with_milestones.append(team)
-
-                # MILESTONE_SET=False
-                # for milestone_to_check in 
-
-                # print()
-
-                repository_releases = repository.get_releases()
-                tags = repository.get_tags()
-                for tag in tags:
-                    if tag.name.lower() == TAG:
-                        teams_with_tag.append(team)
-        exit()
-        return teams_with_tag
-
-                # for release in repository_releases :
-                #     print(release.published_at)
-                #     if release.published_at <= end_datetime and release.published_at >= start_datetime :
-                #         if release.tag_name is not None :
-                #             print(release.tag_name)
-                #             teams_with_release[team] = students
-                #         if release.tarball_url is not None or release.zipball_url is not None :
-                #             teams_with_jar[team] = students
-                # if teams_with_release.get(team, None) is None :
-                #     teams_without_release[team] = students
-                # if teams_with_jar.get(team, None) is None :
-                #     teams_without_jar[team] = students
-        # return teams_with_release, teams_without_release, teams_with_jar, teams_without_jar
-
-    def write_week_to_csv(self, team_list, teams_with_repo, teams_with_PR, student_with_forks, student_DGs, \
-                            student_UGs, student_About_Us, student_Readme, student_java_code, ui_team, \
-                            student_photo, peer_review_students, autopublished_teams, teams_with_tag, day):
+    def write_week_to_csv(self, team_list, teams_with_repo,  day):
 
         output_path = OUTPUT_DIR+"/week_{}/".format(WEEK)
         output_file = output_path+"week_{}_audit_day{}.csv".format(WEEK, day)
 
         if not os.path.exists(output_path):
             os.makedirs(output_path)
-
-        wr = csv.writer(open(output_file, 'w'), delimiter=',', 
-                            quoting=csv.QUOTE_ALL)
+        wr = csv.writer(open(output_file, 'w'), delimiter=',', quoting=csv.QUOTE_ALL)
         wr.writerow(CSV_HEADER)
+
+
         for team, students in team_list.items():
-            ["Auto_Publish", "UI_PNG", "Fork", "DG", "UG", "AboutUs", "README", "Java", "Peer_Review", "Photo"]
             for student in students:
                 to_print=[]
                 to_print.append(student)
                 to_print.append(team)
                 to_print.append(int(team in teams_with_repo))
-                to_print.append(int(team.lower() in teams_with_PR))
-                if team in autopublished_teams.keys():
-                    to_print.append(autopublished_teams[team])
-                else:
-                    to_print.append('')
-                to_print.append(int(ui_team[team] > 0))
-                to_print.append(int(team in teams_with_tag))
-                to_print.append(int(student in student_with_forks))
-                to_print.append(int(student_DGs[student] > 0))
-                to_print.append(int(student_UGs[student] > 0))
-                to_print.append(int(student_About_Us[student] > 0))
-                to_print.append(int(student_Readme[student] > 0))
-                to_print.append(int(student_java_code[student] > 0))
-                to_print.append(int(student in peer_review_students))
-                to_print.append(int(student_photo[student] > 0))
+                to_print.append(int(team.lower() in self.teams_with_PR))
+                to_print.append(self.autopublished_teams[team])
+                to_print.append(int(team in self.teams_build_passing))
+                to_print.append(int(self.ui_team[team] > 0))
+                to_print.append(int(team in self.README_modified))
+                to_print.append(int(team in self.README_ack))
+                to_print.append(int(team in self.teams_with_issue_label))
+                to_print.append(self.team_milestones[team])
+                to_print.append(self.team_issues_marked_story[team])
+                to_print.append(self.team_issues_marked_priority[team])
+                to_print.append(self.team_milestone_due_date[team])
+                to_print.append(self.team_issue_assigned_to_milestone[team])
+                to_print.append(self.team_issue_assigned_to_milestone_1_3[team])
+                to_print.append(int(student in self.student_with_forks))
+                to_print.append(self.student_PR[student])
+                to_print.append(int(self.student_DGs[student] > 0))
+                to_print.append(int(self.student_UGs[student] > 0))
+                to_print.append(int(self.student_About_Us[student] > 0))
+                to_print.append(int(self.student_Readme[student] > 0))
+                to_print.append(int(self.student_java_code[student] > 0))
+                to_print.append(int(student in self.peer_review_students))
+                to_print.append(int(self.student_issue_assigned_to_milestone[student] > 0))
+                to_print.append(int(self.student_photo[student] > 0))
                 wr.writerow(to_print)
 
         return output_file
