@@ -24,21 +24,20 @@ from travispy import TravisPy
 import logging, time
 
 #############################################################
-COURSE = "CS2113"
-TEAM_REPO_PREFIX = "CS2113-AY1819S1-"
-GMAIL_USER = 'cs2113.bot@gmail.com'  
-GMAIL_PASSWORD = 'cs2113.bot.feedback'
-MODULE_EMAIL = "cs2113@comp.nus.edu.sg"
+COURSE = "CS2103"
+TEAM_REPO_PREFIX = "CS2103-AY1819S1-"
+GMAIL_USER = 'cs2103.bot@gmail.com'
+GMAIL_PASSWORD = 'cs2103.bot.feedback'
+MODULE_EMAIL = "cs2103@comp.nus.edu.sg"
 
 
-TEST_EMAIL = "hdevamanyu@student.nitw.ac.in"
+TEST_EMAIL = "siddarth15@cse.iitb.ac.in"
 
-ADDRESSBOOK_REPO = ["nusCS2113-AY1819S1/addressbook-level4", "nusCS2113-AY1819S1/addressbook-level3"]
-AB3="https://github.com/nusCS2113-AY1819S1/addressbook-level3"
-AB4="https://github.com/nusCS2113-AY1819S1/addressbook-level4"
+ADDRESSBOOK_REPO = ["nus-cs2103-AY1819S1/addressbook-level4"]
+AB4="https://github.com/nus-cs2103-AY1819S1/addressbook-level4"
 LINK1 = "https://github.com/{}{}/main"
-LINK2 = "https://nuscs2113-ay1819s1.github.io/website/admin/project-w08-mid-v12.html"
-TIMEDELTA = timedelta(days=1, hours=2) # 2-am checking # Set  timedelta(days=1) for CS2103
+LINK2 = "https://nus-cs2103-ay1819s1.github.io/cs2103-website/admin/project-w08-mid-v12.html"
+TIMEDELTA = timedelta(days=1, hours=0) # 2-am checking # Set  timedelta(days=1) for CS2103
 PRODUCTION = False
 ##############################################################
 
