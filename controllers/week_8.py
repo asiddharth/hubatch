@@ -474,11 +474,11 @@ class Week_8(BaseController):
 
 
         team_repositories, teams_with_repo, team_list=self.check_team_repo_setup(args)
+        self.check_team_level_things(team_list, start_datetime, end_datetime)
         self.check_file_changes(team_repositories, team_list, args, start_datetime, end_datetime)
         self.check_if_PR_sent(team_list, args, start_datetime, end_datetime)
         self.check_readme_modified_AB4_acknowledged(team_list)
         self.check_travis_build_passing(team_list)
-        self.check_team_level_things(team_list, start_datetime, end_datetime)
         self.check_autopublishing(team_list, args)
         self.check_team_forks(team_repositories)
         
@@ -681,8 +681,14 @@ class Week_8(BaseController):
                 repository_milestones = repository.get_milestones(state='all')
 
                 # Note labels for the repository
+                TYPE_FLAG=False
+                PRIORITY_FLAG=False
                 for label in repository_labels:
-                    if (TYPE in label.name.lower()) and (PRIORITY in label.name.lower()):
+                    if (TYPE in label.name.lower()):
+                        TYPE_FLAG=True
+                    if (PRIORITY in label.name.lower()):
+                        PRIORITY_FLAG=True
+                if TYPE_FLAG and PRIORITY_FLAG:
                         self.teams_with_issue_label.append(team)
 
                 # Note milestones for the repository
