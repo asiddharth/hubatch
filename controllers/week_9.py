@@ -546,12 +546,10 @@ class Week_9(BaseController):
             repository =  Github(self.cfg.get_api_key()).get_repo(repo)
             for pull_request in repository.get_pulls(state="open", sort="updated", direction="desc"):
                 try:
-                    if ((pull_request.created_at<=end_datetime) and (pull_request.created_at>=start_datetime)) or \
-                            ((pull_request.updated_at<=end_datetime) and (pull_request.updated_at>=start_datetime)):
-                        pull_request_login = pull_request.user.login.lower()
-                        pull_request_title = pull_request.title[:7].lower()
-                        title_prefix = re.search('\[{}..?-.\]'.format(args.day.lower()), pull_request_title).group()
-                        self.teams_with_PR.append(title_prefix.lower()[1:-1])
+                    pull_request_login = pull_request.user.login.lower()
+                    pull_request_title = pull_request.title[:7].lower()
+                    title_prefix = re.search('\[{}..?-.\]'.format(args.day.lower()), pull_request_title).group()
+                    self.teams_with_PR.append(title_prefix.lower()[1:-1])
                 except:
                     continue
 
