@@ -324,7 +324,7 @@ class Week_9(BaseController):
             try:
                 dt = parser.parse(audit_details["v1.2_deadline"][team_index])
                 deadline = end_datetime+timedelta(days=7)
-                if dt <= deadline:
+                if (dt <= deadline):
                     team_feedback+=[message["x_mark"], message["done"]]
                 else:
                     exit()
@@ -379,8 +379,6 @@ class Week_9(BaseController):
 
             final_message += message["team"].format(* team_feedback)
 
-            print(final_message)
-            print("\n\n---------------------------------\n\n")
 
 
             # Issue tracker not enabled message for all students
@@ -389,78 +387,100 @@ class Week_9(BaseController):
 
             # Creating individual feedback messageer
 
-            # for student in students:
-            #     indiv_message=message["indiv"]
+            for student in students:
+                indiv_message=message["indiv"]
                 
-            #     if PRODUCTION:
-            #         indiv_feedback=[student]
-            #     else:
-            #         indiv_feedback=[DUMMY]
+                if PRODUCTION:
+                    indiv_feedback=[student]
+                else:
+                    indiv_feedback=[DUMMY]
 
-            #     indiv_index=audit_details.index[audit_details['Student']==student][0]
+                indiv_index=audit_details.index[audit_details['Student']==student][0]
 
 
-            #     # Leftover indiv
-            #     LEFTOVER=False
-            #     leftover_indiv_feedback = []
-            #     leftover_indiv_message = ""
+                # Leftover indiv
+                LEFTOVER=False
+                leftover_indiv_feedback = []
+                leftover_indiv_message = ""
 
-            #     # forks
-            #     if int(audit_details["Fork"][indiv_index]) == 0:
-            #         leftover_indiv_feedback+=[" ", message["not_done"]]
-            #         LEFTOVER=True
-            #     else:
-            #         leftover_indiv_feedback+=[message["x_mark"], message["done"]]
-
-                
-            #     try:
-            #         if len(audit_details["Student_PR"][indiv_index])>0:
-            #             leftover_indiv_feedback+=[message["x_mark"], message["link"].format(audit_details["Student_PR"][indiv_index]), message["done"]]
-            #         else:
-            #             exit()
-            #     except:
-            #         leftover_indiv_feedback+=[" ", "", message["not_done"]]
-            #         LEFTOVER=True
+                # forks
+                if int(audit_details["Fork"][indiv_index]) == 0:
+                    leftover_indiv_feedback+=[" ", message["not_done"]]
+                    LEFTOVER=True
+                else:
+                    leftover_indiv_feedback+=[message["x_mark"], message["done"]]
 
                 
-            #     if int(audit_details["Peer_Review"][indiv_index]) == 0:
-            #         leftover_indiv_feedback+=[" ", message["not_done"]]
-            #         LEFTOVER=True
-            #     else:
-            #         leftover_indiv_feedback+=[message["x_mark"], message["done"]]
+                try:
+                    if len(audit_details["Student_PR"][indiv_index])>0:
+                        leftover_indiv_feedback+=[message["x_mark"], message["link"].format(audit_details["Student_PR"][indiv_index]), message["done"]]
+                    else:
+                        exit()
+                except:
+                    leftover_indiv_feedback+=[" ", "", message["not_done"]]
+                    LEFTOVER=True
+
+                
+                if int(audit_details["Peer_Review"][indiv_index]) == 0:
+                    leftover_indiv_feedback+=[" ", message["not_done"]]
+                    LEFTOVER=True
+                else:
+                    leftover_indiv_feedback+=[message["x_mark"], message["done"]]
+
+
+                if int(audit_details["Merged_Documents"][indiv_index]) == 0:
+                    leftover_indiv_feedback+=[" ", message["not_done"]]
+                    LEFTOVER=True
+                else:
+                    leftover_indiv_feedback+=[message["x_mark"], message["done"]]
+
+
+                if (int(audit_details["Photo"][indiv_index])>=1):
+                    leftover_indiv_feedback+=[message["x_mark"], student, message["done"]]
+                else:
+                    leftover_indiv_feedback+=[" ", student, message["not_done"]]
+                    LEFTOVER=True
 
 
 
 
-            #     if LEFTOVER:
-            #         leftover_indiv_message = message["leftover_indiv"].format(*leftover_indiv_feedback)
-            #     else:
-            #         leftover_indiv_message=""
+                if LEFTOVER:
+                    leftover_indiv_message = message["leftover_indiv"].format(*leftover_indiv_feedback)
+                else:
+                    leftover_indiv_message=""
                     
 
-            #     indiv_feedback.append(leftover_indiv_message)
+                indiv_feedback.append(leftover_indiv_message)
 
-            #     # Current
+                # Current
 
-            #     if (int(audit_details["Java"][indiv_index])>=1):
-            #         indiv_feedback+=[message["x_mark"], message["done"]]
-            #     else:
-            #         indiv_feedback+=[" ", message["not_done"]]
+                if (int(audit_details["Java"][indiv_index])>=1):
+                    indiv_feedback+=[message["x_mark"], message["done"]]
+                else:
+                    indiv_feedback+=[" ", message["not_done"]]
 
-            #     if int(audit_details["v1.2_issue_assigned"][indiv_index])==0:
-            #         indiv_feedback+=[" ", message["not_done"]]
-            #     else:
-            #         indiv_feedback+=[message["x_mark"], message["done"]]
+                if (int(audit_details["DG"][indiv_index])>=1):
+                    indiv_feedback+=[message["x_mark"], message["done"]]
+                else:
+                    indiv_feedback+=[" ", message["not_done"]]
 
 
-            #     final_message+= message["indiv"].format(*indiv_feedback)
+                if int(audit_details["v1.2_issue_assigned"][indiv_index])==0:
+                    indiv_feedback+=[" ", message["not_done"]]
+                else:
+                    indiv_feedback+=[message["x_mark"], message["done"]]
+
+
+                final_message+= message["indiv"].format(*indiv_feedback)
 
             
-            # if PRODUCTION:
-            #     final_message+=message["tutor"].format(tutor_map[team][0], COURSE, end_datetime)
-            # else:
-            #     final_message+=message["tutor"].format(DUMMY, COURSE, end_datetime)
-            # feedback_messages[team]=final_message
+            if PRODUCTION:
+                final_message+=message["tutor"].format(tutor_map[team][0], COURSE, end_datetime)
+            else:
+                final_message+=message["tutor"].format(DUMMY, COURSE, end_datetime)
+            feedback_messages[team]=final_message
+
+            print(final_message)
 
         return feedback_messages, no_team_repo, no_issue_tracker, no_team_repo_list
 
@@ -495,7 +515,7 @@ class Week_9(BaseController):
         logging.debug('CSV datafile: %s', args.csv)
 
         start_datetime=datetime.datetime.strptime(args.start_date, '%d/%m/%Y')
-        end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+TIMEDELTA
+        self.end_datetime=end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+TIMEDELTA
 
 
         # Load last weeks output
@@ -520,7 +540,8 @@ class Week_9(BaseController):
             repository =  Github(self.cfg.get_api_key()).get_repo(repo)
             for pull_request in repository.get_pulls(state="open", sort="updated", direction="desc"):
                 try:
-                    if (pull_request.created_at<=end_datetime) and (pull_request.created_at>=start_datetime):
+                    if ((pull_request.created_at<=end_datetime) and (pull_request.created_at>=start_datetime)) or \
+                            ((pull_request.updated_at<=end_datetime) and (pull_request.updated_at>=start_datetime)):
                         pull_request_login = pull_request.user.login.lower()
                         pull_request_title = pull_request.title[:7].lower()
                         title_prefix = re.search('\[{}..?-.\]'.format(args.day.lower()), pull_request_title).group()
@@ -649,7 +670,7 @@ class Week_9(BaseController):
                     self.student_PR[student]= self.audit_details_last["Student_PR"][indiv_index]
 
                 # update Peer_review from last week if empty this week
-                if (student not in self.peer_review_students) and (int(self.audit_details_last["Peer_Review"][indiv_index])==1):
+                if (student not in self.peer_review_students) and (int(self.audit_details_last["Peer_Review"][indiv_index])>=1):
                     self.peer_review_students.add(student)
 
                 # update abcd.png
@@ -849,8 +870,12 @@ class Week_9(BaseController):
                 repository = t.repo(repository_name)
             except :
                 continue
-            if repository.last_build_state == 'passed' :
-                self.teams_build_passing.append(team)
+            builds = t.builds(repository_id =repository.id)
+            for build in builds :
+                if datetime.datetime.strptime(build.finished_at, "%Y-%m-%dT%H:%M:%SZ") <= self.end_datetime : 
+                    if build.state == 'passed' :
+                        self.teams_build_passing.append(team)
+                    break
 
 
     def write_week_to_csv(self, team_list, teams_with_repo,  day):
