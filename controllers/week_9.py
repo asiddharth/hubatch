@@ -65,9 +65,9 @@ OUTPUT_DIR = "./output/"
 CSV_HEADER = ["Student", "Team", "Team_Repo", "Team_PR", "Auto_Publish", "Travis", "UI_PNG", "README_modified", "README_ack",\
         "Issue_Labels", "Milestones", "story_issues", "priority_issues", "v1.2_deadline", "v1.2_closed", "v1.2_tagged", "issue_allocated_v1.2", "issue_closed_v1.2", "issue_allocated_v1.3", \
         "Fork", "Student_PR", "DG", "UG", "AboutUs", "README", "ContactUs", "Java", "Peer_Review", "Merged_Documents", "{}_issue_assigned".format(MILESTONES[0]), "Photo"]
-AB4_README_UNMODIFIED_STRINGS = ["This is a desktop Address Book application.", "= Address Book (Level 4)", \
+AB4_README_UNMODIFIED_STRINGS = ["= Address Book (Level 4)", \
         "What's different from https://github.com/se-edu/addressbook-level3[level 3]:", "= AddressBook (Level 3)", \
-        "What's different from level 2"]
+        "What's different from level 2", "Learning Outcome"]
 AB4_ACKNOWLEDGED_STRINGS = ["address", "book"]
 ACKNOWLEDGE_STRING = "== Acknowledgements"
 DUMMY = "dummy"
@@ -529,11 +529,11 @@ class Week_9(BaseController):
         self.audit_details_last = self.read_audit_details(LAST_WEEK_AUDIT_PATH)
 
         team_repositories, teams_with_repo, team_list=self.check_team_repo_setup(args)
+        self.check_travis_build_passing(team_list)
         self.check_team_level_things(team_list, start_datetime, end_datetime)
         self.check_file_changes(team_repositories, team_list, args, start_datetime, end_datetime)
         self.check_if_PR_sent(team_list, args, start_datetime, end_datetime)
         self.check_readme_modified_AB4_acknowledged(team_list)
-        self.check_travis_build_passing(team_list)
         self.check_autopublishing(team_list, args)
         self.check_team_forks(team_repositories)
         output_file=self.write_week_to_csv(team_list, teams_with_repo, args.day)
@@ -869,17 +869,24 @@ class Week_9(BaseController):
         t = TravisPy.github_auth(self.cfg.get_api_key())
         self.teams_build_passing = []
         for team, students in teams_to_check.items() :
+
             repository_name = TEAM_REPO_PREFIX + str(team) + "/main"
             try :
                 repository = t.repo(repository_name)
             except :
                 continue
-            builds = t.builds(repository_id =repository.id)
+
+            builds = t.builds(slug =repository.slug)
             for build in builds :
-                if datetime.datetime.strptime(build.finished_at, "%Y-%m-%dT%H:%M:%SZ") <= self.end_datetime : 
-                    if build.state == 'passed' :
-                        self.teams_build_passing.append(team)
-                    break
+                if build.commit.branch == "master":
+                    try:
+                        finish_time = datetime.datetime.strptime(build.finished_at, "%Y-%m-%dT%H:%M:%SZ")+timedelta(hours=8)
+                        if (finish_time != None) and (finish_time <= self.end_datetime):
+                            if build.state == 'passed' :
+                                self.teams_build_passing.append(team)
+                            break
+                    except:
+                        continue
 
 
     def write_week_to_csv(self, team_list, teams_with_repo,  day):
