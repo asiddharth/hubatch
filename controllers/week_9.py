@@ -881,12 +881,15 @@ class Week_9(BaseController):
                 if build.commit.branch == "master":
                     try:
                         finish_time = datetime.datetime.strptime(build.finished_at, "%Y-%m-%dT%H:%M:%SZ")+timedelta(hours=8)
-                        if (finish_time != None) and (finish_time <= self.end_datetime):
+                        if (finish_time != None) and ( (finish_time <= self.end_datetime)):
+                            if build.state == 'canceled':
+                                continue
                             if build.state == 'passed' :
                                 self.teams_build_passing.append(team)
                             break
                     except:
                         continue
+        print(self.teams_build_passing)
 
 
     def write_week_to_csv(self, team_list, teams_with_repo,  day):
