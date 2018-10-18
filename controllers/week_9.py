@@ -40,7 +40,7 @@ AB4="https://github.com/nus-cs2103-AY1819S1/addressbook-level4"
 LINK1 = "https://github.com/{}{}/main"
 LINK2 = "https://nus-cs2103-ay1819s1.github.io/cs2103-website/admin/project-w09-v12.html"
 TIMEDELTA = timedelta(days=1, hours=0) # 2-am checking # Set  timedelta(days=1) for CS2103
-PRODUCTION = False
+PRODUCTION = True
 ##############################################################
 
 TYPE = "type."
@@ -872,10 +872,11 @@ class Week_9(BaseController):
                 continue
             builds = t.builds(repository_id =repository.id)
             for build in builds :
-                if datetime.datetime.strptime(build.finished_at, "%Y-%m-%dT%H:%M:%SZ") <= self.end_datetime : 
-                    if build.state == 'passed' :
-                        self.teams_build_passing.append(team)
-                    break
+                if build.finished_at is not None  :
+                    if datetime.datetime.strptime(build.finished_at, "%Y-%m-%dT%H:%M:%SZ") <= self.end_datetime :
+                        if build.state == 'passed' :
+                            self.teams_build_passing.append(team)
+                        break
 
 
     def write_week_to_csv(self, team_list, teams_with_repo,  day):
