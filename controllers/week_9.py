@@ -129,12 +129,6 @@ class Week_9(BaseController):
 
 
 
-
-
-
-
-
-
     def create_feedback(self, args):
         """
         Creates and posts feedback methods for each team and their students
@@ -147,7 +141,6 @@ class Week_9(BaseController):
         teams_to_check, student_details=self.extract_team_info(args.csv, args.day)
         tutor_map=self.load_tutor_map(args.tutor_map)
         feedback_messages, no_team_repo, no_issue_tracker, no_team_repo_list = self.get_feedback_message(teams_to_check, tutor_map, audit_details, args, end_datetime)
-        exit()
         self.post_feedback(teams_to_check, feedback_messages, no_team_repo, no_team_repo_list, no_issue_tracker, student_details, tutor_map )
 
 
@@ -323,7 +316,7 @@ class Week_9(BaseController):
             # Check deadline
             try:
                 dt = parser.parse(audit_details["v1.2_deadline"][team_index])
-                deadline = end_datetime+timedelta(days=7)
+                deadline = end_datetime
                 if (dt <= deadline):
                     team_feedback+=[message["x_mark"], message["done"]]
                 else:
@@ -375,6 +368,20 @@ class Week_9(BaseController):
                     exit()
             except:
                 team_feedback+=[" ", "", message["not_done"]]
+
+
+            # Kudos message
+            KUDOS=False
+            for student in students:
+                indiv_index=audit_details.index[audit_details['Student']==student][0]
+                if int(audit_details["UG"][indiv_index]) >= 1:
+                    KUDOS=True
+                    break
+
+            if KUDOS:
+                team_feedback.append(message["not_graded"])
+            else:
+                team_feedback.append(message[" "])
 
 
             final_message += message["team"].format(* team_feedback)
@@ -480,8 +487,6 @@ class Week_9(BaseController):
                 final_message+=message["tutor"].format(DUMMY, COURSE, end_datetime)
             feedback_messages[team]=final_message
 
-            print(final_message)
-
         return feedback_messages, no_team_repo, no_issue_tracker, no_team_repo_list
 
     def read_audit_details(self, path):
@@ -540,12 +545,10 @@ class Week_9(BaseController):
             repository =  Github(self.cfg.get_api_key()).get_repo(repo)
             for pull_request in repository.get_pulls(state="open", sort="updated", direction="desc"):
                 try:
-                    if ((pull_request.created_at<=end_datetime) and (pull_request.created_at>=start_datetime)) or \
-                            ((pull_request.updated_at<=end_datetime) and (pull_request.updated_at>=start_datetime)):
-                        pull_request_login = pull_request.user.login.lower()
-                        pull_request_title = pull_request.title[:7].lower()
-                        title_prefix = re.search('\[{}..?-.\]'.format(args.day.lower()), pull_request_title).group()
-                        self.teams_with_PR.append(title_prefix.lower()[1:-1])
+                    pull_request_login = pull_request.user.login.lower()
+                    pull_request_title = pull_request.title[:7].lower()
+                    title_prefix = re.search('\[{}..?-.\]'.format(args.day.lower()), pull_request_title).group()
+                    self.teams_with_PR.append(title_prefix.lower()[1:-1])
                 except:
                     continue
 
@@ -872,11 +875,10 @@ class Week_9(BaseController):
                 continue
             builds = t.builds(repository_id =repository.id)
             for build in builds :
-                if build.finished_at is not None  :
-                    if datetime.datetime.strptime(build.finished_at, "%Y-%m-%dT%H:%M:%SZ") <= self.end_datetime :
-                        if build.state == 'passed' :
-                            self.teams_build_passing.append(team)
-                        break
+                if datetime.datetime.strptime(build.finished_at, "%Y-%m-%dT%H:%M:%SZ") <= self.end_datetime : 
+                    if build.state == 'passed' :
+                        self.teams_build_passing.append(team)
+                    break
 
 
     def write_week_to_csv(self, team_list, teams_with_repo,  day):
