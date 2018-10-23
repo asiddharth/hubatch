@@ -126,11 +126,6 @@ class Week_10(BaseController):
 
 
 
-
-
-
-
-
     def create_feedback(self, args):
         """
         Creates and posts feedback methods for each team and their students
@@ -366,7 +361,7 @@ class Week_10(BaseController):
                 leftover_indiv_feedback = []
                 leftover_indiv_message = ""
 
-                if (int(audit_details["Merged_Documents"][indiv_index])>=1):
+                if (int(audit_details["DG"][indiv_index])>=1):
                     leftover_indiv_feedback+=[message["x_mark"], message["done"]]
                 else:
                     leftover_indiv_feedback+=[" ", message["not_done"]]
