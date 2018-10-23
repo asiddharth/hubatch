@@ -1,5 +1,5 @@
 """
-Auditing activities for week 6
+Auditing activities for week 10
 """
 from .common import BaseController
 from connectors.github import GitHubConnector
@@ -301,7 +301,7 @@ class Week_10(BaseController):
             # Issues allocated to v1.3
             try:
                 if len(audit_details["issue_allocated_v1.3"][team_index])>0:
-                    team_feedback+=[message["x_mark"], message["link"].format(audit_details["issue_allocated_v1.2"][team_index]), message["done"]]
+                    team_feedback+=[message["x_mark"], message["link"].format(audit_details["issue_allocated_v1.3"][team_index]), message["done"]]
                 else:
                     exit()
             except:
