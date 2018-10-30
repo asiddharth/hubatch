@@ -1,9 +1,11 @@
-from controllers import Week_7, Week_6, Week_3, Week_5, Week_8, Week_9, Week_10, TADuties
+from controllers import Week_7, Week_6, Week_3, Week_5, Week_8, Week_9, Week_10, Week_11, TADuties
+from controllers import OrganisationController, IssueController
 from common.config import AppConfig
 from connectors.github import GitHubConnector
 from github import Github, GithubException
 import datetime
 import parsers
+import time
 
 import argparse, logging, sys
 
@@ -21,7 +23,9 @@ week_7_ctrl = Week_7(cfg)
 week_8_ctrl = Week_8(cfg)
 week_9_ctrl = Week_9(cfg)
 week_10_ctrl = Week_10(cfg)
-# general_ctrl = General(cfg)
+week_11_ctrl = Week_11(cfg)
+org_ctrl = OrganisationController(ghc, cfg)
+issue_ctrl = IssueController(ghc, cfg)
 track_ta = TADuties(cfg)
 
 def test():
@@ -36,32 +40,13 @@ def test():
 
     # exit()
 
-    r = ghc.organisation.get_repo("main")
-    print(r.full_name)
+    gh = Github(cfg.get_api_key())
+    print(gh.get_rate_limit())
 
     for i in range(1) :
-        print(ghc.create_issue(title='ThrottleTest ' + str(i),msg='DummyTesxt', assignee=None))
+        print(i, ghc.create_issue(title='ThrottleTest ' + str(i*1000),msg='DummyText', assignee=None, repo="DummyTA1/main"))
+        time.sleep(2)
 
-    # repo = Github(cfg.get_api_key()).get_repo("se-edu/addressbook-level1")
-    # start_datetime=datetime.datetime.strptime("30/8/2017", '%d/%m/%Y')
-    # end_datetime=datetime.datetime.strptime("2/9/2017", '%d/%m/%Y')
-    # print(start_datetime, end_datetime)
-
-    # for branch in repo.get_branches():
-    #     print(branch.name)
-    # exit()
-
-    # for commit in repo.get_commits(sha = "add-sort", since=start_datetime, until=end_datetime):
-    #     print(commit.commit.message)
-    # exit()
-
-
-    # for pr in repo.get_pulls(state="all", sort="updated", direction="desc"):
-    #     for commit in pr.get_commits():
-    #         for file in commit.files:
-    #             print(commit.author.login, file.filename, file.changes)
-    #     print()
-    # print(repo.full_name)
 
 def setup_logger():
     """Sets up the logger"""
@@ -90,12 +75,14 @@ def setup_argparse():
     week_8_ctrl.setup_argparse(subparsers)
     week_9_ctrl.setup_argparse(subparsers)
     week_10_ctrl.setup_argparse(subparsers)
+    week_11_ctrl.setup_argparse(subparsers)
+    org_ctrl.setup_argparse(subparsers)
+    issue_ctrl.setup_argparse(subparsers)
     track_ta.setup_argparse(subparsers)
 
     return parser
 
 if __name__ == '__main__':
-
     setup_logger()
     logging.info('hubatch - GitHub CLI tools: Started!')
     parser = setup_argparse()
