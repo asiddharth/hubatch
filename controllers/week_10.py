@@ -1,5 +1,5 @@
 """
-Auditing activities for week 6
+Auditing activities for week 10
 """
 from .common import BaseController
 from connectors.github import GitHubConnector
@@ -41,7 +41,7 @@ LINK1 = "https://github.com/{}{}/main"
 LINK2 = "https://nus-cs2103-ay1819s1.github.io/cs2103-website/admin/project-w10-mid-v13.html"
 TIMEDELTA = timedelta(days=1, hours=0) # 2-am checking # Set  timedelta(days=1) for CS2103
 TIMEDELTA_MILESTONE = timedelta(days=7) # next day checking # Set timedelta(days=7) for CS2103
-PRODUCTION = False
+PRODUCTION = True
 ##############################################################
 
 TYPE = "type."
@@ -300,7 +300,7 @@ class Week_10(BaseController):
             # Issues allocated to v1.3
             try:
                 if len(audit_details["issue_allocated_v1.3"][team_index])>0:
-                    team_feedback+=[message["x_mark"], message["link"].format(audit_details["issue_allocated_v1.2"][team_index]), message["done"]]
+                    team_feedback+=[message["x_mark"], message["link"].format(audit_details["issue_allocated_v1.3"][team_index]), message["done"]]
                 else:
                     exit()
             except:
