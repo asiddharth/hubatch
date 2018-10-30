@@ -39,10 +39,10 @@ ADDRESSBOOK_REPO = ["nusCS2113-AY1819S1/addressbook-level4", "nusCS2113-AY1819S1
 AB3="https://github.com/nusCS2113-AY1819S1/addressbook-level3"
 AB4="https://github.com/nusCS2113-AY1819S1/addressbook-level4"
 LINK1 = "https://github.com/{}{}/main"
-LINK2 = "https://nuscs2113-ay1819s1.github.io/website/admin/project-w10-mid-v13.html"
+LINK2 = "https://nuscs2113-ay1819s1.github.io/website/admin/project-w11-v13.html"
 TIMEDELTA = timedelta(days=1, hours=2) # 2-am checking # Set  timedelta(days=1) for CS2103
-TIMEDELTA_MILESTONE = timedelta(days=8) # next day checking # Set timedelta(days=7) for CS2103
-PRODUCTION = True
+TIMEDELTA_MILESTONE = timedelta(days=1, hours=12) # next day checking # Set timedelta(hours=1) for CS2103
+PRODUCTION = False
 ##############################################################
 
 TYPE = "type."
@@ -291,25 +291,51 @@ class Week_11(BaseController):
                 dt = parser.parse(audit_details["v1.3_deadline"][team_index])
                 deadline = end_datetime+TIMEDELTA_MILESTONE
                 print(deadline)
-                if (dt <= deadline):
+                if (dt <= deadline) or (int(audit_details["v1.3_closed"][team_index]) >0):
                     team_feedback+=[message["x_mark"], message["done"]]
                 else:
                     exit()
             except:
                 team_feedback+=[" ", message["not_done"]]
 
-            # Issues allocated to v1.3
-            try:
-                if len(audit_details["issue_allocated_v1.3"][team_index])>0:
-                    team_feedback+=[message["x_mark"], message["link"].format(audit_details["issue_allocated_v1.3"][team_index]), message["done"]]
-                else:
-                    exit()
-            except:
-                team_feedback+=[" ", "None", message["not_done"]]
+
+            
+            # Issues closed to v1.3
+            if int(audit_details["issue_closed_v1.3"][team_index]) == 0:
+                team_feedback+=[" ", message["not_done"]]
+            else:
+                team_feedback+=[message["x_mark"], message["done"]]
+
+
+            # milestone closed
+            if int(audit_details["v1.3_closed"][team_index]) == 0:
+                team_feedback+=[" ", message["not_done"]]
+            else:
+                team_feedback+=[message["x_mark"], message["done"]]
+
+
+            #Build passing
+            if int(audit_details["Travis"][team_index]) == 0:
+                team_feedback+=[" ", message["not_done"]]
+            else:
+                team_feedback+=[message["x_mark"], message["done"]]
 
 
             # Jar File
             if int(audit_details["Jar"][team_index]) == 0:
+                team_feedback+=[" ", message["not_done"]]
+            else:
+                team_feedback+=[message["x_mark"], message["done"]]
+
+            # UG updated or not
+            UG_update=False
+            for student in students:
+                indiv_index=audit_details.index[audit_details['Student']==student][0]
+
+                if (int(audit_details["UG"][indiv_index])>=1):
+                    UG_update=True
+                    break
+            if not UG_update:
                 team_feedback+=[" ", message["not_done"]]
             else:
                 team_feedback+=[message["x_mark"], message["done"]]
@@ -336,26 +362,6 @@ class Week_11(BaseController):
                 indiv_index=audit_details.index[audit_details['Student']==student][0]
 
 
-                # Leftover indiv v1.1
-                LEFTOVER=False
-                leftover_indiv_feedback = []
-                leftover_indiv_message = ""
-
-                if (int(audit_details["Photo"][indiv_index])>=1):
-                    leftover_indiv_feedback+=[message["x_mark"], student, message["done"]]
-                else:
-                    leftover_indiv_feedback+=[" ", student, message["not_done"]]
-                    LEFTOVER=True
-
-
-                if LEFTOVER:
-                    leftover_indiv_message = message["leftover_indiv_1.1"].format(*leftover_indiv_feedback)
-                else:
-                    leftover_indiv_message=" "
-                    
-
-                indiv_feedback.append(leftover_indiv_message)
-
 
                 # Leftover indiv v1.2
                 LEFTOVER=False
@@ -377,12 +383,23 @@ class Week_11(BaseController):
 
                 indiv_feedback.append(leftover_indiv_message)
 
-                # Current
 
-                if int(audit_details["v1.3_issue_assigned"][indiv_index])==0:
+                # Current issues/PR assigned
+                try:
+                    if (int(audit_details["v1.3_issue_assigned"][indiv_index])>0) or (len(audit_details["Student_PR"][indiv_index])>0) :
+                        indiv_feedback+=[message["x_mark"], message["done"]]
+                    else:
+                        exit()
+                except:
                     indiv_feedback+=[" ", message["not_done"]]
-                else:
+
+
+                # java/fxml
+                if (int(audit_details["Java"][indiv_index])>0):
                     indiv_feedback+=[message["x_mark"], message["done"]]
+                else:
+                    indiv_feedback+=[" ", message["not_done"]]
+
 
 
                 final_message+= message["indiv"].format(*indiv_feedback)
