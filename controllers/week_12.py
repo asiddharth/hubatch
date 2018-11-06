@@ -245,8 +245,6 @@ class Week_12(BaseController):
                     if ((UI_PNG_SUBSTRINGS[0]+".") in file.filename.lower()) and (UI_PNG_SUBSTRINGS[1] in file.filename.lower()):
                         self.ui_team[team]=1
 
-        exit()
-
 
 
     def check_team_repo_setup(self, args):
@@ -300,6 +298,7 @@ class Week_12(BaseController):
         self.team_issues_closed_1_3=defaultdict(lambda: 1)
         self.team_issue_assigned_to_next_milestone=defaultdict(lambda: "")
         self.student_issue_assigned_to_milestone=defaultdict(lambda: 0)
+
 
 
         for team, students in teams_to_check.items():
@@ -358,8 +357,10 @@ class Week_12(BaseController):
         wr.writerow(CSV_HEADER)
 
         
+        print("Printing")
 
         for team, students in team_list.items():
+            print(team)
             for student in students:
                 to_print=[]
                 to_print.append(student)
