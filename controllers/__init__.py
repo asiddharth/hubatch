@@ -11,5 +11,6 @@ from .week_8 import Week_8
 from .week_9 import Week_9
 from .week_10 import Week_10
 from .week_11 import Week_11
+from .week_12 import Week_12
 from .track_ta import TADuties
 

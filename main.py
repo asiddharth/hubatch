@@ -1,4 +1,4 @@
-from controllers import Week_7, Week_6, Week_3, Week_5, Week_8, Week_9, Week_10, Week_11, TADuties
+from controllers import Week_7, Week_6, Week_3, Week_5, Week_8, Week_9, Week_10, Week_11, Week_12, TADuties
 from controllers import OrganisationController, IssueController
 from common.config import AppConfig
 from connectors.github import GitHubConnector
@@ -24,6 +24,7 @@ week_8_ctrl = Week_8(cfg)
 week_9_ctrl = Week_9(cfg)
 week_10_ctrl = Week_10(cfg)
 week_11_ctrl = Week_11(cfg)
+week_12_ctrl = Week_12(cfg)
 org_ctrl = OrganisationController(ghc, cfg)
 issue_ctrl = IssueController(ghc, cfg)
 track_ta = TADuties(cfg)
@@ -76,6 +77,7 @@ def setup_argparse():
     week_9_ctrl.setup_argparse(subparsers)
     week_10_ctrl.setup_argparse(subparsers)
     week_11_ctrl.setup_argparse(subparsers)
+    week_12_ctrl.setup_argparse(subparsers)
     org_ctrl.setup_argparse(subparsers)
     issue_ctrl.setup_argparse(subparsers)
     track_ta.setup_argparse(subparsers)
