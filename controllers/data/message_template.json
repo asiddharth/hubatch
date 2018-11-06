@@ -1,4 +1,19 @@
 {	
+	"week12":{
+		"mail_subject": "{}: Feedback for Week {}",
+		"done":":heavy_check_mark: well done!",
+		"not_done":":exclamation: try to do by next milestone",
+		"x_mark":"x",
+		"link":"[link]({})",
+		"subject":"Subject: feedback on week 12 project progress\n\nSee [v1.4 progress guide]({}) for more details of the activities mentioned below.\n",
+		"indiv":"\n\n## Individual progress of @{} \n\n### Recommended progress for mid-v1.4\n\n- [{}]  Has issues/PRs assigned for the milestone ({})\n- [{}]  PPP available at `{}` ({})\n- [{}]  PPP contains a link to your code on RepoSense ({})",
+		"leftover_team":"\n\n### Leftovers from v1.3\n\n- [{}]  v1.3 milestone (and its issues) closed ({})\n- [{}]  `Ui.png` updated to match product ({})"  ,
+		"team":"\n\n## Team progress{}\n\n### Recommended progress for mid-v1.4\n\n*  Milestone v1.4 _managed_ systematically\n   - [{}]  A suitable deadline set ({})\n   - [{}]  Issues allocated to it e.g., {} ({})",
+		"tutor":"\n\nTutor: @{}\n\nNote: the above observation was done by the {}-feedback-bot and covers changes up to {} only. If you think the above observation is incorrect, please let us know by replying in this thread. Please include links to relevant PRs/comments in your response.",
+		"no_issue_tracker": "Subject: feedback on week 12 project progress\n\nDear team {}, \n\n We could not find issue-tracker enabled for your team repository:\n {} \n\n We encourage you to enable the issue-tracker and get started on the other team and individual activities as suggested by: \n {} \n\n Do ask for help from the tutor if you are facing any difficulties in the project. \n\n Note: the above observation was done by the {}-feedback-bot and covers changes up to {} only. If you think the above observation is incorrect, please let us know by replying to this email. Please include links to relevant PRs/comments in your response.",
+		"no_team_repo": "Subject: feedback on week 12 project progress\n\nDear team {}, \n\n We could not detect your team repo at the expected URL:\n {} \n\n We encourage you to set up the team repo (or correct the org/repo name in case you used different names) and get started on the other team and individual activities as suggested by: \n {} \n\n Do ask for help from the tutor if you are facing any difficulties in the project. \n\n Note: the above observation was done by the {}-feedback-bot and covers changes up to {} only. If you think the above observation is incorrect, please let us know by replying to this email. Please include links to relevant PRs/comments in your response."
+	},
+
 	"week11":{
 		"mail_subject": "{}: Feedback for Week {}",
 		"done":":heavy_check_mark: well done!",
