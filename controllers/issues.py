@@ -2,13 +2,37 @@
 Issue-related tasks
 """
 from .common import BaseController
+from github import Github, GithubObject, GithubException
+from pathlib import Path
 import parsers
+import pickle
+import time, sys
+import os
 
-import argparse, logging, re, time, sys
+import logging, re, time
+
+
+###############################################################
+FROMREPO = "nus-cs2103-AY1819S1/pe-dry-run"
+TOREPO_PREFIX = "CS2103-AY1819S1-{}/main"
+GITHUB_ID_COLUMN_INDEX=2 # mapping details: github id
+TEAM_ASSIGNED_COLUMN_INDEX=5 # mapping details: assigned team
+Production = True
+###############################################################
+
+
+REF_TEMPLATE = '\n\n<hr>\n\n**Reported by:** @{}\n**Severity:** {}\n\n<sub>[original: {}#{}]</sub>'
+OUTPUT_PATH = "./output/PE-1/"
+PE_FILE = "pe_1.p"
+DUMMY = "dummy"
+DUMMY_TOREPO = "DummyTA1/main"
+DRY_RUN_PREFIX = "[PE Dry Run]"
 
 class IssueController(BaseController):
-    def __init__(self, ghc):
+    def __init__(self, ghc, cfg):
         self.ghc = ghc
+        self.cfg = cfg
+        self.gh = Github(self.cfg.get_api_key())
 
     def setup_argparse(self, subparsers):
         """
@@ -32,23 +56,13 @@ class IssueController(BaseController):
         parser.set_defaults(func=self.blast_command)
 
     def setup_copy_args(self, subparsers):
-        help_text = 'copies issues from one repository to another'
-        example_text = '''example:
-  python main.py octocat/source octocat/destination
-  python main.py -m mymapping.csv octocat/source octocat/destination
-  python main.py -m mymapping.csv octocat/source octo{}/destination'''
-        parser = subparsers.add_parser('copy',
-                                 help=help_text,
-                                 epilog=example_text,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-        parser.add_argument('fromrepo', metavar='from', type=str,
-                            help='repository to copy from, in {owner}/{name} format')
-        parser.add_argument('torepo', metavar='to', type=str,
-                            help='repository to copy from, in {owner}/{name} format. If a replacement field ({}) is specified, it will be replaced with the first tag in the mapping.')
+        parser = subparsers.add_parser('copy', help='copies issues from one repository to another')
+        # parser.add_argument('fromrepo', metavar='from', type=str,
+        #                     help='repository from which we should copy')
+        # parser.add_argument('torepo', metavar='to', type=str,
+        #                     help='repository to which we should copy to')
         parser.add_argument('-m', '--mapping', metavar='csv', type=str,
                             help='filename of CSV containing the title tag mapping')
-        parser.add_argument('-s', '--start-from', metavar='index', type=int,
-                            help='start copying from a particular index')
         parser.set_defaults(func=self.copy_command)
 
     def blast_command(self, args):
@@ -61,47 +75,90 @@ class IssueController(BaseController):
             sys.exit(1)
 
     def copy_command(self, args):
-        logging.debug('Copying from %s to %s', args.fromrepo, args.torepo)
+        # logging.debug('Copying from %s to %s', args.fromrepo, args.torepo)
 
-        if args.mapping is None or parsers.common.are_files_readable(args.mapping):
-            self.copy_issues(args.mapping, args.fromrepo, args.torepo, args.start_from)
+        if parsers.common.are_files_readable(args.mapping):
+            self.copy_issues(args.mapping)
         else:
             sys.exit(1)
 
-    def copy_issues(self, mapping_file, fromrepo, torepo, offset):
+    def extract_mapping_info(self, csv_file):
+
+        user_list=parsers.csvparser.get_rows_as_list(csv_file)[1:]
+        users_to_check=list(map(lambda x: [x[GITHUB_ID_COLUMN_INDEX].lower().strip(), x[TEAM_ASSIGNED_COLUMN_INDEX]], user_list))
+
+        mapping={}
+        for user, product_team in users_to_check :
+            mapping[user] = product_team
+        return mapping
+
+    def get_issues_from_repository(self):
+        '''Gets issues from a specified repository'''
+        try:
+            self.gh = Github(self.cfg.get_api_key())
+            repo = self.gh.get_repo(FROMREPO)
+            return repo.get_issues(state = "open", direction='asc')
+        except GithubException as e:
+            GitHubConnector.log_exception(e.data)
+            return []
+
+    def copy_issues(self, mapping_file):
         '''
         Copies issues from one repository to another
         '''
-        first_repo_issues = self.ghc.get_issues_from_repository(fromrepo)
-        mapping_dict = parsers.csvparser.get_rows_as_dict(mapping_file) if mapping_file is not None else {}
-        REF_TEMPLATE = '\n\n<sub>[original: {}#{}]</sub>'
 
-        if torepo.count('{}') > 1:
-            logging.error('torepo contains more than 1 replacement field!')
-            sys.exit(1)
+        # Load student mapping
+        mapping_dict = self.extract_mapping_info(mapping_file)
 
-        if not offset:
-            offset = 0
+        # Copy all issues
+        if not os.path.exists(OUTPUT_PATH):
+            os.makedirs(OUTPUT_PATH)
+        my_file = Path("./temp.p")
 
-        for idx, issue in enumerate(first_repo_issues[offset:]):
-            from_mapping = re.search('\[(.*?)\]', issue.title)
-            to_mapping = []
-            new_title = issue.title.split(']', 1)[-1]
-            new_body = issue.body + REF_TEMPLATE.format(fromrepo, issue.number)
+        if not my_file.is_file():
+            from_repo_issues = self.get_issues_from_repository()
+            issues = []
+            for issue in from_repo_issues:
+                issues.append(issue)
+            pickle.dump(issues, open("./temp.p", "wb"))
+            pickle.dump(issues, open(OUTPUT_PATH+PE_FILE, "wb"))
+            from_repo_issues = issues
+        else:
+            from_repo_issues = pickle.load(open("./temp.p", "rb"))
 
-            if from_mapping:
-                from_mapping = from_mapping.group(1)
-                to_mapping = mapping_dict.get(from_mapping, [])
 
+        print("Remaining no. of issues to copy: ", len(from_repo_issues))
+        completed = None
+        for idx, issue in enumerate(from_repo_issues):
             try:
-                actl_to_repo = torepo.format(to_mapping[0])
-            except IndexError:
-                actl_to_repo = torepo.format('')
+                from_student = issue.user.login.lower()
 
-            is_transferred = self.ghc.create_issue(new_title, new_body, None, to_mapping, actl_to_repo)
+                if len(issue.labels)==0:
+                    LABEL = "Not Specified"
+                else:
+                    LABEL = "`{}`".format(issue.labels[0].name.split(".")[-1])
 
-            if not is_transferred:
-                logging.error('[%d][#%d][%s -> %s] Unable to copy', idx, issue.number, fromrepo, actl_to_repo)
+                TOREPO = TOREPO_PREFIX.format(mapping_dict[from_student])
+
+                if Production:
+                    print(TOREPO)
+                    new_body = issue.body + REF_TEMPLATE.format(from_student, LABEL, FROMREPO, issue.number)
+                    is_transferred = self.ghc.create_issue(title=DRY_RUN_PREFIX+issue.title,msg=new_body, assignee=None, repo=TOREPO)
+                else:
+                    new_body = issue.body + REF_TEMPLATE.format(DUMMY, LABEL, DUMMY, issue.number)
+                    is_transferred = self.ghc.create_issue(title=DRY_RUN_PREFIX+issue.title,msg=new_body, assignee=None, repo=DUMMY_TOREPO)
+
+                if not is_transferred:
+                    logging.error('Unable to create issue with idx: %s', idx)
+                    print('Unable to create issue with idx: %s', idx)
+                    exit()
+                time.sleep(2)
+                
+            except:
+                print("Crashed")
+                completed = idx
+                pickle.dump(from_repo_issues[completed:], open("./temp.p", "wb"))
+                exit()
 
     def blast_issues(self, csv_file, title, msg_file, start_from):
         """
