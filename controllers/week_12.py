@@ -59,8 +59,8 @@ UI_PNG_SUBSTRINGS = ["ui", ".png"]
 MESSAGE_TEMPLATE = "controllers/data/message_template.json"
 OUTPUT_DIR = "./output/"
 CSV_HEADER = ["Student", "Team", "Team_Repo", \
-              "v1.3_closed", "issue_closed_v1.3", "UI_PNG",\
-              "v1.4_deadline", "v1.4_deadline0/1", "issue_allocated_v1.4", \
+              "v1.3_closed", "issue_closed_v1.3", "issue_and milestone_closed_v1.3[0/1]", "UI_PNG",\
+              "v1.4_deadline", "v1.4_deadline[0/1]", "issue_allocated_v1.4", \
               "{}_issue_assigned".format(MILESTONES[0]), "PPP_link", "Reposense_linked"]
 DUMMY = "dummy"
 WEEK = 12
@@ -222,23 +222,23 @@ class Week_12(BaseController):
             except:
                 continue
 
-            for pull_request in repo.get_pulls(state="all", sort="updated", direction="desc"):
-                try:
-                    pull_request_login = pull_request.user.login.lower()
-                    # print(pull_request_login)
+            # for pull_request in repo.get_pulls(state="all", sort="updated", direction="desc"):
+            #     try:
+            #         pull_request_login = pull_request.user.login.lower()
+            #         # print(pull_request_login)
 
-                    if ((pull_request.created_at<=end_datetime) and (pull_request.created_at>=start_datetime)) or \
-                            ((pull_request.updated_at<=end_datetime) and (pull_request.updated_at>=start_datetime)):
+            #         if ((pull_request.created_at<=end_datetime) and (pull_request.created_at>=start_datetime)) or \
+            #                 ((pull_request.updated_at<=end_datetime) and (pull_request.updated_at>=start_datetime)):
 
 
-                        for file in pull_request.get_files():
-                            filename = file.filename.lower()
+            #             for file in pull_request.get_files():
+            #                 filename = file.filename.lower()
 
-                            if (UI_PNG_SUBSTRINGS[0] in filename.lower()) and (UI_PNG_SUBSTRINGS[1] in filename.lower()):
-                                self.ui_team[team]=1
+            #                 if (UI_PNG_SUBSTRINGS[0] in filename.lower()) and (UI_PNG_SUBSTRINGS[1] in filename.lower()):
+            #                     self.ui_team[team]=1
 
-                except:
-                    continue
+            #     except:
+            #         continue
 
             for commit in repo.get_commits(path="docs/images/", since=start_datetime, until=end_datetime):
                 for file in commit.files:
@@ -368,6 +368,7 @@ class Week_12(BaseController):
                 to_print.append(int(team in teams_with_repo))
                 to_print.append(int(self.team_milestone_closed_1_3[team]>0))
                 to_print.append(int(self.team_issues_closed_1_3[team]>0))
+                to_print.append(int(bool(self.team_milestone_closed_1_3[team]) and bool(self.team_issues_closed_1_3[team])))
                 to_print.append(int(self.ui_team[team] > 0))
                 to_print.append(self.team_milestone_due_date[team])
 
