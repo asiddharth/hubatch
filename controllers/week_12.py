@@ -43,8 +43,8 @@ LINK2 = "https://nus-cs2103-ay1819s1.github.io/cs2103-website/admin/project-w12-
 PPP_LINK = "https://cs2103-ay1819s1-{}.github.io/main/team/{}.html"
 REPOSENSE_LINK = "https://nus-cs2103-ay1819s1.github.io/cs2103-dashboard/#=undefined&search="
 TIMEDELTA = timedelta(days=1, hours=0) # 2-am checking # Set  timedelta(days=1) for CS2103
-TIMEDELTA_MILESTONE = timedelta(hours=1) # next day checking # Set timedelta(days=7) for CS2103
-PRODUCTION = False
+TIMEDELTA_MILESTONE = timedelta(days=7, hours=1) # next day checking # Set timedelta(days=7) for CS2103
+PRODUCTION = True
 ##############################################################
 
 
