@@ -304,9 +304,9 @@ class Week_12(BaseController):
                 # PPP_link
                 ppp_link = PPP_LINK.format(team.lower(), student.lower())
                 if int(audit_details['PPP_link'][indiv_index]) == 0:
-                    indiv_feedback+=[" ", PPP_LINK.format(team.lower(), student.lower()), message["not_done"]]
+                    indiv_feedback+=[" ", message["link"].format(PPP_LINK.format(team.lower(), student.lower())), message["not_done"]]
                 else:
-                    indiv_feedback+=[message["x_mark"], PPP_LINK.format(team.lower(), student.lower()), message["done"]]
+                    indiv_feedback+=[message["x_mark"], message["link"].format(PPP_LINK.format(team.lower(), student.lower())), message["done"]]
 
                 # Reposense
                 if int(audit_details['Reposense_linked'][indiv_index]) == 0:
