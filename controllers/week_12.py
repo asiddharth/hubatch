@@ -42,10 +42,10 @@ AB4="https://github.com/nusCS2113-AY1819S1/addressbook-level4"
 LINK1 = "https://github.com/{}{}/main"
 LINK2 = "https://nuscs2113-ay1819s1.github.io/website/admin/project-w12-mid-v14.html"
 PPP_LINK = "https://cs2113-ay1819s1-{}.github.io/main/team/{}.html"
-REPOSENSE_LINK = "https://nuscs2113-ay1819s1.github.io/dashboard/#=undefined&search="
+REPOSENSE_LINK = "https://nuscs2113-ay1819s1.github.io/dashboard/#=undefined"
 TIMEDELTA = timedelta(days=1, hours=2) # 2-am checking # Set  timedelta(days=1) for CS2103
 TIMEDELTA_MILESTONE = timedelta(days=8) # next day checking # Set timedelta(days=7) for CS2103
-PRODUCTION = False
+PRODUCTION = True
 ##############################################################
 
 
@@ -305,9 +305,9 @@ class Week_12(BaseController):
                 # PPP_link
                 ppp_link = PPP_LINK.format(team.lower(), student.lower())
                 if int(audit_details['PPP_link'][indiv_index]) == 0:
-                    indiv_feedback+=[" ", PPP_LINK.format(team.lower(), student.lower()), message["not_done"]]
+                    indiv_feedback+=[" ", message["link"].format(PPP_LINK.format(team.lower(), student.lower())), message["not_done"]]
                 else:
-                    indiv_feedback+=[message["x_mark"], PPP_LINK.format(team.lower(), student.lower()), message["done"]]
+                    indiv_feedback+=[message["x_mark"], message["link"].format(PPP_LINK.format(team.lower(), student.lower())), message["done"]]
 
                 # Reposense
                 if int(audit_details['Reposense_linked'][indiv_index]) == 0:
