@@ -41,7 +41,7 @@ AB4="https://github.com/nus-cs2103-AY1819S1/addressbook-level4"
 LINK1 = "https://github.com/{}{}/main"
 LINK2 = "https://nus-cs2103-ay1819s1.github.io/cs2103-website/admin/project-w12-mid-v14.html"
 PPP_LINK = "https://cs2103-ay1819s1-{}.github.io/main/team/{}.html"
-REPOSENSE_LINK = "https://nus-cs2103-ay1819s1.github.io/cs2103-dashboard/#=undefined&search="
+REPOSENSE_LINK = "https://nus-cs2103-ay1819s1.github.io/cs2103-dashboard/#=undefined"
 TIMEDELTA = timedelta(days=1, hours=0) # 2-am checking # Set  timedelta(days=1) for CS2103
 TIMEDELTA_MILESTONE = timedelta(days=7, hours=1) # next day checking # Set timedelta(days=7) for CS2103
 PRODUCTION = True
