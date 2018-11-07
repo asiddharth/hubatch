@@ -121,7 +121,210 @@ class Week_12(BaseController):
         Creates and posts feedback methods for each team and their students
         """
 
-        pass
+        self.end_datetime=datetime.datetime.strptime(args.end_date, '%d/%m/%Y')+TIMEDELTA
+
+        logging.debug('Reading audit from csv: %s', args.csv)
+        audit_details = self.read_audit_details(args.audit_csv)
+        teams_to_check, student_details=self.extract_team_info(args.csv, args.day)
+        tutor_map=self.load_tutor_map(args.tutor_map)
+        feedback_messages, no_team_repo, no_issue_tracker, no_team_repo_list = self.get_feedback_message(teams_to_check, tutor_map, audit_details, args, self.end_datetime)
+        self.post_feedback(teams_to_check, feedback_messages, no_team_repo, no_team_repo_list, no_issue_tracker, student_details, tutor_map )
+
+
+    def post_feedback(self, teams_to_check, feedbacks, no_team_repo, no_team_repo_list, no_issue_tracker, student_details, tutor_map):
+        """
+        Posts feedback to each teams repo
+        :param feedback: dictionary of feedbacks[team] = feedback_message
+        """
+
+        for team, feedback in feedbacks.items():
+
+            if team in no_team_repo_list:
+                TA = tutor_map[team][1]
+                mail_message=no_team_repo[team]
+                student_mails=[]
+                for student in teams_to_check[team]:
+                    student_mails.append(student_details[student][0])
+                self.mail_feedback(mail_message, student_mails, TA)
+            else:
+                print(team)
+                if PRODUCTION:
+                    ghc=GitHubConnector(self.cfg.get_api_key(), TEAM_REPO_PREFIX+str(team)+"/main", TEAM_REPO_PREFIX+str(team))
+                else:
+                    ghc=GitHubConnector(self.cfg.get_api_key(), self.cfg.get_repo(), self.cfg.get_organisation())
+
+                result = ghc.create_issue(title='Feedback on week {} project progress'.format(WEEK), msg=feedback, assignee=None)
+                if result == False:
+
+                    # Have to mail no_issue_tracker
+                    TA = tutor_map[team][1]
+                    student_mails=[]
+                    mail_message=no_issue_tracker[team]
+                    for student in teams_to_check[team]:
+                        student_mails.append(student_details[student][0])
+                    self.mail_feedback(mail_message, student_mails, TA)
+
+                time.sleep(SLEEP_TIME)
+
+    def mail_feedback(self, message, student_mails, TA_EMAIL):
+
+        server_ssl = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server_ssl.ehlo()
+        server_ssl.login(GMAIL_USER, GMAIL_PASSWORD)
+
+        mail_subject=message_template["week{}".format(WEEK)]["mail_subject"]
+
+        mail_message = '{}'.format(message)
+
+        if PRODUCTION:
+            toaddr = student_mails
+            cc_emails = [MODULE_EMAIL, TA_EMAIL]
+        else:
+            toaddr = [TEST_EMAIL]
+            cc_emails = []
+
+        mail_message = "To: %s" % ', '.join(toaddr) + "\r\n" + \
+                       "CC: %s" % ', '.join(cc_emails) + "\r\n" + \
+                        mail_message
+
+        toaddr = toaddr + cc_emails
+        print(toaddr,  student_mails, mail_message)
+
+        mail = server_ssl.sendmail(GMAIL_USER, toaddr, mail_message)
+        time.sleep(SLEEP_TIME)
+        server_ssl.close()
+
+    def get_feedback_message(self, teams_to_check, tutor_map, audit_details, args, end_datetime):
+
+        message = message_template["week{}".format(WEEK)]
+
+        feedback_messages={}
+        no_issue_tracker={}
+        no_team_repo={}
+        no_team_repo_list=[]
+
+        for team, students in teams_to_check.items():
+                
+            final_message=""
+
+            final_message+=message["subject"].format(LINK2)
+
+            # Creating team feedback message
+            team_feedback=[]
+            team_index=audit_details.index[audit_details['Team']==team][0]
+            no_team_repo[team]=message["no_team_repo"].format(team, LINK1.format(TEAM_REPO_PREFIX,team), LINK2, COURSE, end_datetime)
+
+
+
+
+            ############################################################################################################################################
+            # Leftovers first
+            LEFTOVER=False # no leftover assumed
+
+            leftover_team_feedback = []
+            leftover_team_message = ""
+
+
+
+            # v1.3 milestone and issues closed
+            if int(audit_details['issue_and milestone_closed_v1.3[0/1]'][team_index]) == 0:
+                leftover_team_feedback+=[" ", message["not_done"]]
+                LEFTOVER=True
+            else:
+                leftover_team_feedback+=[message["x_mark"], message["done"]]
+
+            # ui.png updated in the last 21 days
+            if int(audit_details['UI_PNG'][team_index]) == 0:
+                leftover_team_feedback+=[" ", message["not_done"]]
+                LEFTOVER=True
+            else:
+                leftover_team_feedback+=[message["x_mark"], message["done"]]
+            
+
+            if LEFTOVER:
+                leftover_team_message = message["leftover_team"].format(*leftover_team_feedback)
+            else:
+                leftover_team_message=""
+            ############################################################################################################################################
+
+            team_feedback+=[leftover_team_message]
+
+            # Team Repo created
+            if int(audit_details["Team_Repo"][team_index]) == 0:
+                no_team_repo_list.append(team)
+
+            
+
+            # Check deadline
+            if int(audit_details['v1.4_deadline[0/1]'][team_index]) == 0:
+                team_feedback+=[" ", message["not_done"]]
+            else:
+                team_feedback+=[message["x_mark"], message["done"]]
+
+            # Issues allocated to v1.3
+            try:
+                if len(audit_details["issue_allocated_v1.4"][team_index])>0:
+                    team_feedback+=[message["x_mark"], message["link"].format(audit_details["issue_allocated_v1.4"][team_index]), message["done"]]
+                else:
+                    exit()
+            except:
+                team_feedback+=[" ", "None", message["not_done"]]
+
+
+            final_message += message["team"].format(* team_feedback)
+
+
+
+            # Issue tracker not enabled message for all students
+            no_issue_tracker[team]=message["no_issue_tracker"].format(team, LINK1.format(TEAM_REPO_PREFIX,team), LINK2, COURSE, end_datetime)
+
+
+            # Creating individual feedback messageer
+
+            for student in students:
+                indiv_message=message["indiv"]
+                
+                if PRODUCTION:
+                    indiv_feedback=[student]
+                else:
+                    indiv_feedback=[DUMMY]
+
+                indiv_index=audit_details.index[audit_details['Student']==student][0]
+
+
+                # Current issues/PR assigned
+                try:
+                    if (int(audit_details["v1.4_issue_assigned"][indiv_index])>0):
+                        indiv_feedback+=[message["x_mark"], message["done"]]
+                    else:
+                        exit()
+                except:
+                    indiv_feedback+=[" ", message["not_done"]]
+
+                # PPP_link
+                ppp_link = PPP_LINK.format(team.lower(), student.lower())
+                if int(audit_details['PPP_link'][indiv_index]) == 0:
+                    indiv_feedback+=[" ", PPP_LINK.format(team.lower(), student.lower()), message["not_done"]]
+                else:
+                    indiv_feedback+=[message["x_mark"], PPP_LINK.format(team.lower(), student.lower()), message["done"]]
+
+                # Reposense
+                if int(audit_details['Reposense_linked'][indiv_index]) == 0:
+                    indiv_feedback+=[" ", message["not_done"]]
+                else:
+                    indiv_feedback+=[message["x_mark"], message["done"]]
+
+                final_message+= message["indiv"].format(*indiv_feedback)
+
+            
+            if PRODUCTION:
+                final_message+=message["tutor"].format(tutor_map[team][0], COURSE, end_datetime)
+            else:
+                final_message+=message["tutor"].format(DUMMY, COURSE, end_datetime)
+            feedback_messages[team]=final_message
+
+        return feedback_messages, no_team_repo, no_issue_tracker, no_team_repo_list
+
 
     def read_audit_details(self, path):
         """
@@ -130,6 +333,12 @@ class Week_12(BaseController):
         user_audit_details = parsers.csvparser.get_pandas_list(path)
         return user_audit_details
 
+    def load_tutor_map(self, csv_file):
+        data=parsers.csvparser.get_rows_as_list(csv_file)
+        tutor_map={}
+        for datum in data:
+            tutor_map[datum[0]]=(datum[1].strip(), datum[2].strip())
+        return tutor_map
 
 
 
@@ -221,23 +430,23 @@ class Week_12(BaseController):
             except:
                 continue
 
-            # for pull_request in repo.get_pulls(state="all", sort="updated", direction="desc"):
-            #     try:
-            #         pull_request_login = pull_request.user.login.lower()
-            #         # print(pull_request_login)
+            for pull_request in repo.get_pulls(state="all", sort="updated", direction="desc"):
+                try:
+                    pull_request_login = pull_request.user.login.lower()
+                    # print(pull_request_login)
 
-            #         if ((pull_request.created_at<=end_datetime) and (pull_request.created_at>=start_datetime)) or \
-            #                 ((pull_request.updated_at<=end_datetime) and (pull_request.updated_at>=start_datetime)):
+                    if ((pull_request.created_at<=end_datetime) and (pull_request.created_at>=start_datetime)) or \
+                            ((pull_request.updated_at<=end_datetime) and (pull_request.updated_at>=start_datetime)):
 
 
-            #             for file in pull_request.get_files():
-            #                 filename = file.filename.lower()
+                        for file in pull_request.get_files():
+                            filename = file.filename.lower()
 
-            #                 if (UI_PNG_SUBSTRINGS[0] in filename.lower()) and (UI_PNG_SUBSTRINGS[1] in filename.lower()):
-            #                     self.ui_team[team]=1
+                            if (UI_PNG_SUBSTRINGS[0] in filename.lower()) and (UI_PNG_SUBSTRINGS[1] in filename.lower()):
+                                self.ui_team[team]=1
 
-            #     except:
-            #         continue
+                except:
+                    continue
 
             for commit in repo.get_commits(path="docs/images/", since=start_datetime, until=end_datetime):
                 for file in commit.files:
@@ -335,7 +544,7 @@ class Week_12(BaseController):
 
                 # Current milestone specific
                 for milestone, due_date in local_due_date.items():
-                    if MILESTONES[0] in milestone.lower():
+                    if (MILESTONES[0] in milestone.lower()) and (len(milestone)==4):
                         self.team_milestone_due_date[team]=due_date
 
 
