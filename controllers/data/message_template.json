@@ -6,7 +6,7 @@
 		"x_mark":"x",
 		"link":"[link]({})",
 		"subject":"Subject: feedback on week 12 project progress\n\nSee [v1.4 progress guide]({}) for more details of the activities mentioned below.\n",
-		"indiv":"\n\n## Individual progress of @{} \n\n### Recommended progress for mid-v1.4\n\n- [{}]  Has issues/PRs assigned for the milestone ({})\n- [{}]  PPP available at `{}` ({})\n- [{}]  PPP contains a link to your code on RepoSense ({})",
+		"indiv":"\n\n## Individual progress of @{} \n\n### Recommended progress for mid-v1.4\n\n- [{}]  Has issues/PRs assigned for the milestone ({})\n- [{}]  PPP available at {} ({})\n- [{}]  PPP contains a link to your code on RepoSense ({})",
 		"leftover_team":"\n\n### Leftovers from v1.3\n\n- [{}]  v1.3 milestone (and its issues) closed ({})\n- [{}]  `Ui.png` updated to match product ({})"  ,
 		"team":"\n\n## Team progress{}\n\n### Recommended progress for mid-v1.4\n\n*  Milestone v1.4 _managed_ systematically\n   - [{}]  A suitable deadline set ({})\n   - [{}]  Issues allocated to it e.g., {} ({})",
 		"tutor":"\n\nTutor: @{}\n\nNote: the above observation was done by the {}-feedback-bot and covers changes up to {} only. If you think the above observation is incorrect, please let us know by replying in this thread. Please include links to relevant PRs/comments in your response.",
