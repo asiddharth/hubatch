@@ -72,14 +72,14 @@ class GitHubConnector:
             assignee = GithubObject.NotSet
 
         logging.info('Creating issue %s for %s', title, assignee)
-        lbl_objs = self.strs_to_labels(labels)
+        # lbl_objs = self.strs_to_labels(labels)
 
         try:
             repo_obj = self.repo
             if repo is not None:
                repo_obj = self.gh.get_repo(repo)
             issue = repo_obj.create_issue(title, body=msg, assignee=assignee,
-                                          labels=lbl_objs)
+                                          labels=labels)
             logging.info('Issue created as #%s', issue.id)
             return True
         except GithubException as e:
