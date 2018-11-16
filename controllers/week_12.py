@@ -442,7 +442,8 @@ class Week_12(BaseController):
                         for file in pull_request.get_files():
                             filename = file.filename.lower()
 
-                            if (UI_PNG_SUBSTRINGS[0] in filename.lower()) and (UI_PNG_SUBSTRINGS[1] in filename.lower()):
+                            if (UI_PNG_SUBSTRINGS[0]+"." in filename.lower()) and (UI_PNG_SUBSTRINGS[1] in filename.lower()):
+                                print(pull_request)
                                 self.ui_team[team]=1
 
                 except:
@@ -451,6 +452,7 @@ class Week_12(BaseController):
             for commit in repo.get_commits(path="docs/images/", since=start_datetime, until=end_datetime):
                 for file in commit.files:
                     if ((UI_PNG_SUBSTRINGS[0]+".") in file.filename.lower()) and (UI_PNG_SUBSTRINGS[1] in file.filename.lower()):
+                        print(commit)
                         self.ui_team[team]=1
 
 
