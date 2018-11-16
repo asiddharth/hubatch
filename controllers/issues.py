@@ -9,14 +9,14 @@ import pickle
 import time, sys
 import os
 import random
-
+from connectors import GitHubConnector
 import logging, re, time
 
 
 ###############################################################
-FROMREPO = "nus-cs2103-AY1819S1/pe-dry-run"
+FROMREPO = "nus-cs2103-AY1819S1/pe"
 #TOREPO_PREFIX = "CS2103-AY1819S1-{}/main"
-TOREPO = "nus-cs2103-AY1819S1/pe"
+TOREPO = "nus-cs2103-AY1819S1/pe-results"
 GITHUB_ID_COLUMN_INDEX=2 # mapping details: github id
 TEAM_ASSIGNED_COLUMN_INDEX=5 # mapping details: assigned team
 Production = False
@@ -204,12 +204,13 @@ class IssueController(BaseController):
             LABEL_NAMES.append("team.{}".format(value.split("-")[1]))
 
         LABEL_NAMES = list(set(LABEL_NAMES))
-
+        print("Adding Labels")
         # Create new labels in TOREPO
         if Production:
             self.add_labels_to_repository(TOREPO, LABEL_NAMES)
         else:
             self.add_labels_to_repository(DUMMY_TOREPO, LABEL_NAMES)
+        print("Added Labels")
 
         # All labels from TO_REPO
         if Production:
@@ -242,7 +243,7 @@ class IssueController(BaseController):
                     except:
                         pass
 
-                # Tutorial and Team 
+                # Tutorial and Team
                 TUTORIAL, TEAM_NO = mapping_dict[from_student].split("-")
                 labels.append(LABEL_OBJ["tutorial.{}".format(TUTORIAL)])
                 labels.append(LABEL_OBJ["team.{}".format(TEAM_NO)])
@@ -255,14 +256,13 @@ class IssueController(BaseController):
                 else:
                     new_body = issue.body + REF_TEMPLATE.format(DUMMY, issue.number)
                     is_transferred = self.ghc.create_issue(title=issue.title,msg=new_body, assignee=None, labels=labels, repo=DUMMY_TOREPO)
-
                 if not is_transferred:
                     logging.error('Unable to create issue with idx: %s', idx)
                     print('Unable to create issue with idx: %s', idx)
                     exit()
                 time.sleep(2)
-                
-            except:
+
+            except :
                 print("Crashed")
                 completed = idx
                 pickle.dump(from_repo_issues[completed:], open("./temp.p", "wb"))
