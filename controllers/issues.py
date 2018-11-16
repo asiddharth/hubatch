@@ -233,17 +233,24 @@ class IssueController(BaseController):
                 from_student = issue.user.login.lower()
                 labels=[]
 
+                isSeverity=False
+                for label in issue.labels:
+                    if "sever" in label.name:
+                        isSeverity=True
+                print(isSeverity)
+
                 # Repo severity 
-                if len(issue.labels)==0:
+                if (len(issue.labels)==0) or (not isSeverity):
                     labels.append(LABEL_OBJ["severity.Low"])
                 else:
                     # For failure in label objects
-                    try:
-                        labels.append(LABEL_OBJ[issue.labels[0].name])
-                    except:
-                        pass
+                    for label in issue.labels:
+                        try:
+                            labels.append(LABEL_OBJ[label.name])
+                        except:
+                            continue
 
-                # Tutorial and Team
+                # Tutorial and Team 
                 TUTORIAL, TEAM_NO = mapping_dict[from_student].split("-")
                 labels.append(LABEL_OBJ["tutorial.{}".format(TUTORIAL)])
                 labels.append(LABEL_OBJ["team.{}".format(TEAM_NO)])
@@ -256,13 +263,14 @@ class IssueController(BaseController):
                 else:
                     new_body = issue.body + REF_TEMPLATE.format(DUMMY, issue.number)
                     is_transferred = self.ghc.create_issue(title=issue.title,msg=new_body, assignee=None, labels=labels, repo=DUMMY_TOREPO)
+
                 if not is_transferred:
                     logging.error('Unable to create issue with idx: %s', idx)
                     print('Unable to create issue with idx: %s', idx)
                     exit()
                 time.sleep(2)
-
-            except :
+                
+            except:
                 print("Crashed")
                 completed = idx
                 pickle.dump(from_repo_issues[completed:], open("./temp.p", "wb"))
