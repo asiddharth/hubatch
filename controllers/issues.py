@@ -17,8 +17,8 @@ import logging, re, time
 FROMREPO = "nusCS2113-AY1819S1/pe-2"
 # TOREPO_PREFIX = "cs2113-AY1819S1-{}/main"
 TOREPO = "nusCS2113-AY1819S1/pe2-results"
-GITHUB_ID_COLUMN_INDEX=1 # mapping details: github id
-TEAM_ASSIGNED_COLUMN_INDEX=4 # mapping details: assigned team
+GITHUB_ID_COLUMN_INDEX=2 # mapping details: github id
+TEAM_ASSIGNED_COLUMN_INDEX=7 # mapping details: assigned team
 Production = False
 ###############################################################
 
@@ -222,9 +222,6 @@ class IssueController(BaseController):
             LABEL_OBJ[label.name]=label
 
 
-
-
-
         completed = None
         for idx, issue in enumerate(from_repo_issues):
             print(idx)
@@ -232,15 +229,22 @@ class IssueController(BaseController):
                 from_student = issue.user.login.lower()
                 labels=[]
 
+                isSeverity=False
+                for label in issue.labels:
+                    if "sever" in label.name:
+                        isSeverity=True
+                print(isSeverity)
+
                 # Repo severity 
-                if len(issue.labels)==0:
+                if (len(issue.labels)==0) or (not isSeverity):
                     labels.append(LABEL_OBJ["severity.Low"])
                 else:
                     # For failure in label objects
-                    try:
-                        labels.append(LABEL_OBJ[issue.labels[0].name])
-                    except:
-                        pass
+                    for label in issue.labels:
+                        try:
+                            labels.append(LABEL_OBJ[label.name])
+                        except:
+                            continue
 
                 # Tutorial and Team 
                 TUTORIAL, TEAM_NO = mapping_dict[from_student].split("-")
