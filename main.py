@@ -1,5 +1,5 @@
 from controllers import Week_7, Week_6, Week_3, Week_5, Week_8, Week_9, Week_10, Week_11, Week_12, TADuties
-from controllers import OrganisationController, IssueController
+from controllers import OrganisationController, IssueController, PeProcessing
 from common.config import AppConfig
 from connectors.github import GitHubConnector
 from github import Github, GithubException
@@ -25,6 +25,7 @@ week_9_ctrl = Week_9(cfg)
 week_10_ctrl = Week_10(cfg)
 week_11_ctrl = Week_11(cfg)
 week_12_ctrl = Week_12(cfg)
+pe_processing_ctrl = PeProcessing(ghc, cfg)
 org_ctrl = OrganisationController(ghc, cfg)
 issue_ctrl = IssueController(ghc, cfg)
 track_ta = TADuties(cfg)
@@ -81,6 +82,7 @@ def setup_argparse():
     org_ctrl.setup_argparse(subparsers)
     issue_ctrl.setup_argparse(subparsers)
     track_ta.setup_argparse(subparsers)
+    pe_processing_ctrl.setup_argparse(subparsers)
 
     return parser
 
