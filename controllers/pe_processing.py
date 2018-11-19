@@ -123,20 +123,18 @@ class PeProcessing(BaseController):
         data=parsers.csvparser.get_rows_as_list(csv_file)
         tutor_map={}
         for datum in data:
-            tutor_map[datum[0]]=(datum[1].strip(), datum[2].strip())
+            tutor_map[datum[0]]=datum[1].strip()
         return tutor_map
 
     def extract_team_info(self, csv_file):
 
         user_list=parsers.csvparser.get_rows_as_list(csv_file)[1:]
-        users_to_check=list(map(lambda x: [x[-2].lower().strip(), x[-3], x[-4], x[0], x[-1]], user_list))
+        users_to_check=list(map(lambda x: [x[-2].lower().strip(), x[-3], x[-1]], user_list))
 
         team_list=defaultdict(list)
-        student_details={}
-        for user, team, email, name, team_no in users_to_check :
+        for user, team, team_no in users_to_check :
             team_list[team+"-"+team_no[-1]].append(user)
-            student_details[user]=(email, name)
-        return team_list, student_details
+        return team_list
 
     def create_issue_body(self, issue, team_members) :
         issue_body = issue.body
@@ -247,12 +245,13 @@ class PeProcessing(BaseController):
                 else :
                     parent_issue = current_issues[int(parent_issue_number)]
                     new_body += self.create_issue_body(parent_issue, students)
-
+                asignee = tutor_map[team_name]
                 if Production:
                     print(TO_REPO_TA)
-                    is_transferred = self.ghc.create_issue(title=title, msg=new_body, assignee=None,
+                    is_transferred = self.ghc.create_issue(title=title, msg=new_body, assignee=asignee,
                                                            labels=labels, repo=TO_REPO_TA)
                 else:
+                    new_body += "Tutor : " + asignee
                     is_transferred = self.ghc.create_issue(title=title, msg=new_body, assignee=None,
                                                            labels=labels, repo=DUMMY_TOREPO)
 
