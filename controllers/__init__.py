@@ -13,4 +13,6 @@ from .week_10 import Week_10
 from .week_11 import Week_11
 from .week_12 import Week_12
 from .track_ta import TADuties
+from .pe_processing import PeProcessing
+from connectors import GitHubConnector
 
