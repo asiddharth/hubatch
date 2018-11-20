@@ -22,12 +22,12 @@ import logging, re, time, json
 ###############################################################
 FROMREPO = "nus-cs2103-AY1819S1/pe-results"
 FROMREPO_DUMMY = "DummyTA1/main"
-
 FROMREPOORIGINAL = "nus-cs2103-AY1819S1/pe"
 
 GITHUB_ID_COLUMN_INDEX=2 # mapping details: github id
 TEAM_ASSIGNED_COLUMN_INDEX=5 # mapping details: assigned team
-Production = True
+Production = False
+BOT_IDENTITY_STRING = "cs2103-feedback-bot" #Change here for cs2113
 ###############################################################
 REF_TEMPLATE = '\n\n<hr>\n<sub>[original: {}#{}]</sub>'
 
@@ -60,8 +60,11 @@ class PeProcessing(BaseController):
         self.gh = Github(self.cfg.get_api_key())
 
 
-        dummy_repo = Github(self.cfg.get_api_key()).get_repo(DUMMY_TOREPO)
-        self.dummy_issue = dummy_repo.get_issue(number=1572)
+        dummy_repo = Github(self.cfg.get_api_key()).get_repo(FROMREPO)
+        self.dummy_issue1 = dummy_repo.get_issue(number=1409) #dup, has parent
+        self.dummy_issue2 = dummy_repo.get_issue(number=80) #dup, no parent
+        self.dummy_issue3 = dummy_repo.get_issue(number=1410) # accepted
+        self.dummy_issue4 = dummy_repo.get_issue(number=1414) # rejected
 
     def setup_argparse(self, subparsers):
         """
@@ -148,25 +151,24 @@ class PeProcessing(BaseController):
     def create_issue_body(self, issue, team_members) :
         issue_body = issue.body
         for comment in issue.get_comments() :
-            issue_body += "\n <hr> \n ** Comment by `" + comment.user.name + "` \n"
-            issue_body += comment.body
-        if Production :
-            issue_body += REF_TEMPLATE.format(FROMREPO, issue.number)
-        else :
-            issue_body += REF_TEMPLATE.format(FROMREPO_DUMMY, issue.number)
-        issue_body += "<sub> assignees: "
-        for member in team_members :
-            issue_body += "`" + member + "`"
-        issue_body += "</sub>"
-        issue_body += "\n\n**Tutor to check:**\n"
-        issue_body += "- [] duplicate status \n"
-        issue_body += "- []  downgrade of severity \n"
-        issue_body += "- [] justification for rejection \n"
+            if not comment.user.login.startswith(BOT_IDENTITY_STRING) :
+                issue_body += "\n\n<hr> \n\n\n**Comment by `" + comment.user.login + "`**\n"
+                issue_body += comment.body
         return issue_body
 
 
     def post_ta_issue_checks(self, args):
-        from_repo_issues = pickle.load(open("./temp.p", "rb"))
+        #from_repo_issues = pickle.load(open("./temp.p", "rb"))
+        if Production:
+            print(TO_REPO_TA)
+        else :
+            print(DUMMY_TOREPO)
+        from_repo_issues = self.get_issues_from_repository()
+
+        original_issues = {}
+        for orig_issue in pickle.load(open(OUTPUT_PATH + PE_FILE, "rb")):
+            original_issues[int(orig_issue.number)] = orig_issue
+
         # Setting up the labels
         tutor_map = self.load_tutor_map(args.tutor_map)
         student_map = self.extract_team_info(args.team_map)
@@ -194,36 +196,21 @@ class PeProcessing(BaseController):
         for issue in from_repo_issues:
             current_issues[issue.number] = issue
 
+        if not Production :
+            from_repo_issues = [self.dummy_issue1, self.dummy_issue2, self.dummy_issue3, self.dummy_issue4 ]
+            print("dummy init")
         for idx, issue in enumerate(from_repo_issues):
             print(idx)
+            original_issue_number = int(re.search(r'{}#(.*)]</sub>'.format(FROMREPOORIGINAL), issue.body).group(1))
             try:
                 from_student = issue.user.login.lower()
                 labels = []
-
-                # isSeverity = False
-                # for label in issue.labels:
-                #     if "sever" in label.name:
-                #         isSeverity = True
-                # print(isSeverity)
-                #
-                # # Repo severity
-                # if (len(issue.labels) == 0) or (not isSeverity):
-                #     labels.append(LABEL_OBJ["severity.Low"])
-                # else:
-                #     # For failure in label objects
-                #     for label in issue.labels:
-                #         try:
-                #             labels.append(LABEL_OBJ[label.name])
-                #         except:
-                #             continue
-                #
-                # # Tutorial and Team
-                # TUTORIAL, TEAM_NO = mapping_dict[from_student].split("-")
-                # labels.append(LABEL_OBJ["tutorial.{}".format(TUTORIAL)])
-                # labels.append(LABEL_OBJ["team.{}".format(TEAM_NO)])
                 tutorial = ""
                 team = ""
                 isDuplicate = False
+                isSeverityDowngraded = False
+                isRejected = False
+                currentSeverity = "low"
                 parent_issue_number = None
                 for label in issue.labels:
                     try:
@@ -234,9 +221,21 @@ class PeProcessing(BaseController):
                             tutorial = label.name[-3:]
                         if label.name.lower() == "duplicate":
                             isDuplicate = True
+                        if "rejected" in label.name.lower():
+                            isRejected = True
+                        if "severity" in label.name.lower() :
+                            currentSeverity = label.name.split(".")[-1].lower()
                     except:
                         continue
-                team_name = tutorial + team
+                original_issue = original_issues[original_issue_number]
+                severityOriginal = "high"
+                for label in original_issue.labels:
+                    if "severity" in label.name.lower():
+                        severityOriginal = label.name.split(".")[-1].lower()
+                        break
+                if Severity_Levels[severityOriginal] > Severity_Levels[currentSeverity] :
+                    isSeverityDowngraded = True
+                team_name = tutorial + "-" + team
                 students = student_map[team_name]
                 title = "[" + str(issue.number) + "]" + issue.title
                 new_body = self.create_issue_body(issue, students)
@@ -245,33 +244,55 @@ class PeProcessing(BaseController):
                     for comment in issue.get_comments():
                         comment_str = comment.body.lower()
                         duplicate_str = re.search(r'duplicate\s+of\s+#([0-9]+)', comment_str)
+                        if not duplicate_str:
+                            duplicate_str = re.search(r'duplicate\s+of\s+' + PE_issues_regex, comment_str)
                         if duplicate_str:
                             parent_issue_number = int(duplicate_str.group(1))
                             break
                     new_body += "\n\n**The following issue is claimed as the original:**\n\n"
-                if parent_issue_number is None :
-                    new_body +=  "### Missing! \n\n"
-                else :
-                    parent_issue = current_issues[int(parent_issue_number)]
-                    new_body += self.create_issue_body(parent_issue, students)
-                asignee = tutor_map[team_name]
+                    if parent_issue_number is None :
+                        new_body +=  "### Missing! \n\n"
+                    else :
+                        parent_issue = current_issues[int(parent_issue_number)]
+                        new_body += self.create_issue_body(parent_issue, students)
+                if Production:
+                    new_body += REF_TEMPLATE.format(FROMREPO, issue.number)
+                else:
+                    new_body += REF_TEMPLATE.format(FROMREPO_DUMMY, issue.number)
+                new_body += "\n\n<sub> assignees: "
+                for member in students:
+                    new_body += "`" + member + "`, "
+                new_body += "</sub>"
+                new_body += "\n\n**Tutor to check:**\n"
+                if isDuplicate :
+                    new_body += "- [ ] duplicate status \n"
+                if isSeverityDowngraded :
+                    new_body += "- [ ]  downgrade of severity \n"
+                if isRejected :
+                    new_body += "- [ ] justification for rejection \n"
+                assignee = tutor_map[team_name]
+                print(new_body)
+                print("Creating Issue")
+                is_transferred = False
                 if Production:
                     print(TO_REPO_TA)
-                    is_transferred = self.ghc.create_issue(title=title, msg=new_body, assignee=asignee,
+                    is_transferred = self.ghc.create_issue(title=title, msg=new_body, assignee=assignee,
                                                            labels=labels, repo=TO_REPO_TA)
                 else:
-                    new_body += "Tutor : " + asignee
+                    new_body += "Tutor : " + assignee
+                    print(new_body)
                     is_transferred = self.ghc.create_issue(title=title, msg=new_body, assignee=None,
                                                            labels=labels, repo=DUMMY_TOREPO)
-
-                if not is_transferred:
+                if not bool(is_transferred):
                     logging.error('Unable to create issue with idx: %s', idx)
                     print('Unable to create issue with idx: %s', idx)
                     exit()
                 time.sleep(2)
-
-            except:
-                print("Crashed")
+                if bool(is_transferred) :
+                    print(is_transferred)
+            except TypeError as e :
+                print("Crashed", e)
+                print(sys.exc_info()[0])
                 completed = idx
                 pickle.dump(from_repo_issues[completed:], open("./temp.p", "wb"))
                 exit()
