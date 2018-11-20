@@ -249,17 +249,18 @@ class PeProcessing(BaseController):
                         if duplicate_str:
                             parent_issue_number = int(duplicate_str.group(1))
                             break
-                    new_body += "\n\n**The following issue is claimed as the original:**\n\n"
+                    new_body += "\n\n<hr><hr> \n\n**The following issue is claimed as the original:**\n\n"
                     if parent_issue_number is None :
                         new_body +=  "### Missing! \n\n"
                     else :
                         parent_issue = current_issues[int(parent_issue_number)]
+                        new_body += "**" + parent_issue.title.strip() + "**\n\n"
                         new_body += self.create_issue_body(parent_issue, students)
                 if Production:
                     new_body += REF_TEMPLATE.format(FROMREPO, issue.number)
                 else:
                     new_body += REF_TEMPLATE.format(FROMREPO_DUMMY, issue.number)
-                new_body += "\n\n<sub> assignees: "
+                new_body += "\n\n<sub> proposed-assignees: "
                 for member in students:
                     new_body += "`" + member + "`, "
                 new_body += "</sub>"
