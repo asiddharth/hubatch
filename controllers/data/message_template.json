@@ -1,14 +1,15 @@
 {	
 	"pe-checks":{
-		"base":"Attention team {}\n\nFollowing areas might need your attention before the PE bug processing period is over (i.e., by Tuesday)\n{}\n.Note that the above observations were done by a bot. Please post in our [forum]({}) (and give a link to this issue) if there are any inaccuracies in the above observations.",
+		"base":"Attention team {}\n\nFollowing areas might need your attention before the PE bug processing period is over (i.e., by Tuesday)\n\n{}\n\nNote that the above observations were done by a bot. Please post in our [forum]({}) (and give a link to this issue) if there are any inaccuracies in the above observations.",
+		"multiple_labels":"-  This issue has multiple `response.*` labels, `severity.*` labels, `type.*` labels",
 		"missing_response":"-  This issue is missing a `response.*` label",
 		"no_assigness":"-  The issue has been accepted but does not have assignees (issues with no assignees will be considered as assigned to all team members)",
 		"rejected_no_comment":"-  The issue has been rejected but there is no explanation",
 		"downgraded_no_comment":"-  The issue severity has been downgraded, but there is no explanation.",
 		"duplicate":"-  This issue has a `duplicate` label but,\n{}",
-		"origin_not_specified":"     -  the original has not being specified using a `Duplicate of #___` annotation as explained [here](https://help.github.com/articles/about-duplicate-issues-and-pull-requests/).",
-		"origin_duplicate":"     -  the issue specified as the original of this issue also has a `duplicate` label.",
-		"origin_lesser":"     -  the issue specified as the original of this issue has a lower severity level than this issue’s initial severity. Out of a group of duplicates, the one with the highest severity must be chosen as the ‘original’."
+		"parent_not_specified":"     -  the original has not being specified using a `Duplicate of #___` annotation as explained [here](https://help.github.com/articles/about-duplicate-issues-and-pull-requests/).\n",
+		"parent_duplicate":"     -  the issue specified as the original of this issue also has a `duplicate` label.\n",
+		"parent_lesser":"     -  the issue specified as the original of this issue has a lower severity level than this issue’s initial severity. Out of a group of duplicates, the one with the highest severity must be chosen as the ‘original’.\n"
 	},
 
 	"week12":{
