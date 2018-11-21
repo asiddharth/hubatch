@@ -261,7 +261,14 @@ class PeProcessing(BaseController):
                 else:
                     new_body += REF_TEMPLATE.format(FROMREPO_DUMMY, issue.number)
                 new_body += "\n\n<sub> proposed-assignees: "
-                for member in students:
+                issue_assignees = issue.assignees
+                assignee_names = []
+                if not issue_assignees :
+                    assignee_names = students
+                else :
+                    for student in issue_assignees :
+                        assignee_names.append(student.login)
+                for member in assignee_names:
                     new_body += "`" + member + "`, "
                 new_body += "</sub>"
                 new_body += "\n\n**Tutor to check:**\n"
