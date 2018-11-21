@@ -153,7 +153,7 @@ class PeProcessing(BaseController):
         for comment in issue.get_comments() :
             if not comment.user.login.startswith(BOT_IDENTITY_STRING) :
                 issue_body += "\n\n<hr> \n\n\n**Comment by `" + comment.user.login + "`**\n"
-                issue_body += comment.body
+                issue_body += re.sub(r'@([^ ]+)', r'`@\1`', comment.body)
         return issue_body
 
 
