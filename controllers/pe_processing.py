@@ -228,7 +228,7 @@ class PeProcessing(BaseController):
                     except:
                         continue
                 original_issue = original_issues[original_issue_number]
-                severityOriginal = "high"
+                severityOriginal = "low"
                 for label in original_issue.labels:
                     if "severity" in label.name.lower():
                         severityOriginal = label.name.split(".")[-1].lower()
